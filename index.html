@@ -1,0 +1,2941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studix — One App, Endless Learning</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <style>
+        /* ── CSS ── */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-card-hover: rgba(30, 41, 59, 0.9);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-glow: #6366f1;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --accent-hover: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --marigold: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --radius: 16px;
+            --sidebar-width: 280px;
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; height: 100%; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #090d16;
+            background-image: radial-gradient(at 0% 0%, rgba(99,102,241,0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(168,85,247,0.15) 0px, transparent 50%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300' opacity='0.05'%3E%3Cpath fill='%236366f1' d='M150 0 L250 100 L250 200 L150 300 L50 200 L50 100 Z'/%3E%3Ccircle cx='150' cy='150' r='40' fill='%23a855f7'/%3E%3Cpath fill='%23f59e0b' d='M150 70 L180 130 L240 150 L180 170 L150 230 L120 170 L60 150 L120 130 Z'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: cover, cover, 180px 180px;
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .app-logo { width: 72px; height: 72px; margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(99,102,241,0.5)); }
+        .header-logo { width: 32px; height: 32px; object-fit: contain; }
+        #splash {
+            position: fixed; inset: 0; z-index: 999;
+            background: #090d16;
+            color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 20px;
+            animation: fadeOutSplash 0.5s ease 0.8s forwards;
+        }
+        @keyframes fadeOutSplash { to { opacity: 0; visibility: hidden; } }
+        #splash h1 {
+            font-size: 42px; margin: 10px 0;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #splash p { color: var(--marigold); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; margin: 0; }
+        #splash .tagline { margin-top: 14px; color: var(--text-muted); font-size: 14px; font-style: italic; }
+        header {
+            background: rgba(15,23,42,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 16px 20px 14px;
+            position: sticky; top: 0; z-index: 800;
+        }
+        header .top-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        header .left-header { display: flex; align-items: center; gap: 14px; }
+        header h1 {
+            margin: 0; font-size: 24px; font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header p { margin: 4px 0 0; font-size: 13px; color: var(--text-muted); max-width: 520px; }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        #sidebar-toggle-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff;
+            border-radius: 12px; width: 42px; height: 42px; font-size: 20px; cursor: pointer; flex: 0 0 auto;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
+        }
+        #sidebar-toggle-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+        #bell-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff;
+            border-radius: 12px; width: 42px; height: 42px; font-size: 16px; cursor: pointer; position: relative; flex: 0 0 auto;
+            transition: all 0.2s ease;
+        }
+        #bell-btn:hover { background: rgba(255,255,255,0.1); }
+        #bell-dot {
+            position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-red); display: none; box-shadow: 0 0 8px var(--accent-red);
+        }
+        #user-chip { font-size: 12px; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+        #user-chip img { width: 22px; height: 22px; border-radius: 50%; }
+        #logout-link { color: var(--marigold); cursor: pointer; text-decoration: underline; font-weight: 600; }
+        #sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 950;
+            opacity: 0; pointer-events: none; transition: opacity .25s ease;
+        }
+        #sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+        #sidebar {
+            position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100%;
+            background: #0f172a; border-right: 1px solid var(--border-color); color: var(--text-main); z-index: 960;
+            transform: translateX(-100%); transition: transform .3s cubic-bezier(0.4,0,0.2,1);
+            display: flex; flex-direction: column; box-shadow: var(--shadow);
+        }
+        #sidebar.open { transform: translateX(0); }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-header h2 { margin: 0; font-size: 20px; color: #fff; }
+        .sidebar-close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
+            color: var(--text-muted); background: transparent; border: none; width: 100%; text-align: left;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s ease;
+        }
+        .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .sidebar-item.active { background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+        nav {
+            display: flex; gap: 8px; padding: 12px 16px; background: transparent;
+            border-bottom: 1px solid var(--border-color); overflow-x: auto;
+        }
+        nav button {
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.03); color: var(--text-muted);
+            padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+            cursor: pointer; white-space: nowrap; transition: all .2s ease;
+        }
+        nav button:hover { background: rgba(255,255,255,0.08); color: var(--text-main); }
+        nav button.active { background: var(--accent-gradient); border-color: transparent; color: #fff; box-shadow: 0 2px 10px rgba(99,102,241,0.3); }
+        main { flex: 1; padding: 20px; max-width: 800px; margin: 0 auto; width: 100%; }
+        section { display: none; }
+        section.active { display: block; animation: slideIn .3s ease; }
+        .card {
+            background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color); border-radius: var(--radius);
+            padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .card:hover { border-color: rgba(255,255,255,0.18); }
+        h2.section-title {
+            font-size: 13px; text-transform: uppercase; letter-spacing: .1em;
+            color: var(--marigold); margin: 0 0 12px; font-weight: 700;
+        }
+        .subtle { font-size: 13px; color: var(--text-muted); margin-top: -6px; margin-bottom: 14px; }
+        .quote-card {
+            background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(168,85,247,0.2) 100%);
+            border: 1px dashed var(--accent-glow);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .quote-icon { font-size: 28px; }
+        .quote-body { flex: 1; }
+        .quote-text { font-size: 14px; font-style: italic; color: #fff; margin: 0 0 4px; }
+        .quote-author { font-size: 11px; color: var(--marigold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        #about-card, #login-card {
+            max-width: 480px; margin: 32px auto; text-align: center;
+        }
+        #about-card h1, #login-card h1 {
+            font-size: 32px; margin-bottom: 4px;
+            background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .motto { color: var(--marigold); font-weight: 700; font-size: 12px; letter-spacing: .1em; margin-bottom: 20px; text-transform: uppercase; }
+        .about-text { font-size: 14px; color: var(--text-muted); line-height: 1.6; text-align: left; margin-bottom: 16px; }
+        .about-feature { display: flex; align-items: flex-start; gap: 12px; text-align: left; font-size: 13.5px; padding: 10px 0; border-bottom: 1px dashed var(--border-color); }
+        .field {
+            width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color);
+            border-radius: 10px; font-size: 14px; color: var(--text-main); margin-bottom: 12px; outline: none;
+            transition: border-color 0.2s ease;
+        }
+        .field:focus { border-color: var(--accent-glow); }
+        .btn {
+            background: var(--accent-gradient); color: #fff; border: none; padding: 12px 20px;
+            border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn:hover { background: var(--accent-hover); box-shadow: 0 4px 15px rgba(99,102,241,0.4); }
+        .btn.secondary { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn.secondary:hover { background: rgba(255,255,255,0.05); }
+        .btn.danger { background: rgba(239,68,68,0.2); border: 1px solid var(--accent-red); color: var(--accent-red); }
+        .btn.danger:hover { background: var(--accent-red); color: #fff; }
+        .btn.small { padding: 6px 12px; font-size: 12.5px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .dash-greeting { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .dash-greeting img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--marigold); }
+        .dash-greeting .name { font-size: 18px; font-weight: 700; }
+        .dash-greeting .sub { font-size: 13px; color: var(--text-muted); }
+        #chat-window {
+            height: 360px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 14px; background: rgba(0,0,0,0.2); margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; animation: messagePop 0.25s cubic-bezier(0.175,0.885,0.32,1.275); }
+        @keyframes messagePop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .msg.bot { background: rgba(255,255,255,0.08); border-bottom-left-radius: 2px; color: var(--text-main); }
+        .msg.user { background: var(--accent-gradient); color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg.system { align-self: center; color: var(--text-muted); font-size: 12px; font-style: italic; }
+        .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+        .chat-input-row textarea {
+            flex: 1; resize: none; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color);
+            border-radius: 10px; font-size: 14px; color: var(--text-main); font-family: inherit; min-height: 44px; max-height: 110px; outline: none;
+        }
+        .icon-btn {
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-main); border-radius: 10px;
+            width: 44px; height: 44px; font-size: 18px; cursor: pointer; flex: 0 0 44px; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .icon-btn.recording { background: var(--accent-red); border-color: var(--accent-red); color: #fff; animation: pulseRecord 1.5s infinite; }
+        @keyframes pulseRecord { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+        #img-preview { max-width: 90px; border-radius: 8px; margin-bottom: 8px; display: none; border: 1px solid var(--border-color); }
+        .timer-pill {
+            font-size: 12px; color: var(--marigold); font-weight: 700; background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.2); padding: 4px 12px; border-radius: 999px; display: inline-block; margin-bottom: 12px;
+        }
+        .prompt-chip {
+            display: inline-block; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 999px;
+            padding: 6px 14px; font-size: 12.5px; margin: 4px 6px 4px 0; cursor: pointer; color: var(--text-muted); transition: all 0.2s;
+        }
+        .prompt-chip:hover { background: rgba(255,255,255,0.1); color: var(--text-main); transform: translateY(-1px); }
+        #group-window, #dm-chat-window {
+            height: 360px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 14px; background: rgba(0,0,0,0.2); margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .gmsg { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.4; animation: messagePop 0.2s ease; }
+        .gmsg .who { font-size: 11px; font-weight: 700; color: var(--marigold); margin-bottom: 2px; }
+        .gmsg.me { background: var(--accent-gradient); color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .gmsg.me .who { color: rgba(255,255,255,0.8); }
+        .gmsg.other { background: rgba(255,255,255,0.08); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .delete-msg-btn { position: absolute; top: 4px; right: 6px; background: transparent; border: none; color: var(--accent-red); cursor: pointer; font-size: 12px; opacity: 0.7; }
+        .delete-msg-btn:hover { opacity: 1; }
+        .video-frame { width: 100%; height: 420px; border: none; border-radius: 12px; background: #000; }
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 8px; font-size: 13.5px;
+            background: rgba(0,0,0,0.15); animation: slideIn 0.3s ease;
+        }
+        .list-item a { color: var(--marigold); font-weight: 700; text-decoration: none; }
+        .badge { font-size: 10px; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 999px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .badge.red { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+        .badge.green { background: rgba(16,185,129,0.2); color: var(--accent-green); }
+        .badge.blue { background: rgba(99,102,241,0.2); color: #818cf8; }
+        .goal-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--border-color); font-size: 14px; transition: opacity 0.2s; }
+        .goal-item.done span { text-decoration: line-through; color: var(--text-muted); }
+        .empty-hint { font-size: 13px; color: var(--text-muted); }
+        .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 8px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .lb-rank { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12.5px; color: var(--marigold); flex: 0 0 auto; }
+        .lb-row.top1 .lb-rank { background: var(--accent-gradient); color: #fff; }
+        .lb-points { margin-left: auto; font-weight: 700; color: var(--marigold); }
+        .quiz-q { padding: 14px 0; border-bottom: 1px dashed var(--border-color); }
+        .quiz-q p { font-weight: 600; margin: 0 0 10px; }
+        .quiz-opt { display: block; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 6px; cursor: pointer; font-size: 13.5px; background: rgba(0,0,0,0.1); transition: all 0.2s; }
+        .quiz-opt:hover { background: rgba(255,255,255,0.05); }
+        .quiz-opt.selected { border-color: var(--marigold); background: rgba(245,158,11,0.1); }
+        .quiz-opt.correct { border-color: var(--accent-green); background: rgba(16,185,129,0.1); }
+        .quiz-opt.wrong { border-color: var(--accent-red); background: rgba(239,68,68,0.1); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .stat-box { background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; text-align: center; transition: transform 0.2s; }
+        .stat-box:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+        .stat-box .num { font-size: 24px; font-weight: 800; color: var(--text-main); display: block; }
+        .stat-box .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+        #notif-panel {
+            position: fixed; top: 0; right: 0; width: min(340px, 88vw); height: 100%; background: #0f172a;
+            border-left: 1px solid var(--border-color); box-shadow: var(--shadow); z-index: 900; transform: translateX(100%); transition: transform .25s cubic-bezier(0.4,0,0.2,1);
+            padding: 20px; overflow-y: auto;
+        }
+        #notif-panel.open { transform: translateX(0); }
+        #notif-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 890; display: none; }
+        #notif-overlay.open { display: block; }
+        .notif-item { padding: 12px 0; border-bottom: 1px solid var(--border-color); font-size: 13px; animation: slideIn 0.2s ease; }
+        .notif-item .t { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+        select.field option { background: #0f172a; color: #fff; }
+        footer { text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted); }
+        @keyframes slideIn { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+        .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .status-submitted { background: rgba(99,102,241,0.2); color: #818cf8; }
+        .status-checked { background: rgba(16,185,129,0.2); color: var(--accent-green); }
+        .file-box { border: 1.5px dashed var(--border-color); border-radius: 12px; padding: 16px; text-align: center; background: rgba(0,0,0,0.15); margin: 12px 0; cursor: pointer; transition: border-color 0.2s; }
+        .file-box:hover { border-color: var(--accent-glow); }
+        .remark-box { background: rgba(255,255,255,0.05); border-left: 3px solid var(--marigold); padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+        @keyframes popCelebration {
+            0% { transform: scale(0.4) rotate(-5deg); opacity: 0; filter: brightness(1.5); }
+            60% { transform: scale(1.08) rotate(2deg); opacity: 1; filter: brightness(1.2); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+        }
+        .celebration-banner {
+            background: var(--accent-gradient); color: #fff; padding: 16px 24px; border-radius: 14px; text-align: center; font-weight: 700; margin-bottom: 16px;
+            animation: popCelebration 0.5s cubic-bezier(0.175,0.885,0.32,1.275); box-shadow: 0 15px 35px rgba(99,102,241,0.5);
+            border: 1px solid rgba(255,255,255,0.3); font-size: 15px; letter-spacing: 0.3px;
+        }
+        @media(max-width:600px) { .card { padding: 16px; } main { padding: 12px; } .video-frame { height: 280px; } }
+        .login-field-group { text-align: left; margin-bottom: 6px; }
+        .login-field-group label { font-size: 12px; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 4px; }
+        .login-error { color: var(--accent-red); font-size: 13px; min-height: 20px; margin-bottom: 8px; }
+        #google-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+            background: #fff; border: none; padding: 12px; border-radius: 10px;
+            font-size: 14px; font-weight: 700; cursor: pointer; color: #20301f; transition: transform .15s ease, box-shadow .15s ease;
+        }
+        #google-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
+        .auth-toggle { display: flex; gap: 8px; margin: 16px 0 14px; justify-content: center; }
+        .auth-toggle button {
+            border: 1.5px solid var(--border-color); background: transparent; color: var(--text-muted);
+            padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s ease;
+        }
+        .auth-toggle button.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
+        #email-auth-panel { display: none; text-align: left; }
+        #role-picker { display: none; margin-top: 16px; text-align: left; }
+        #role-picker select, #role-picker input { width: 100%; }
+        #email-switch-mode { font-size: 12.5px; color: #a855f7; cursor: pointer; text-decoration: underline; display: block; text-align: center; margin-top: 6px; }
+        .submission-file-link { color: var(--marigold); text-decoration: underline; cursor: pointer; }
+        .submission-file-link:hover { color: #fbbf24; }
+    </style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+    <svg class="app-logo" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <path fill="url(#splash-grad)" d="M150 10 L270 90 L270 210 L150 290 L30 210 L30 90 Z" />
+        <circle cx="150" cy="150" r="45" fill="#f8fafc" />
+        <path fill="#6366f1" d="M150 110 L180 170 L120 170 Z" />
+        <defs><linearGradient id="splash-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+    </svg>
+    <h1>Studix</h1>
+    <p>ONE APP, ENDLESS LEARNING</p>
+    <div class="tagline">Loading your intelligent classroom...</div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar-overlay"></div>
+<aside id="sidebar">
+    <div class="sidebar-header">
+        <h2>Studix Menu</h2>
+        <button class="sidebar-close-btn" id="sidebar-close-btn">&times;</button>
+    </div>
+    <div class="sidebar-nav" id="sidebar-nav"></div>
+</aside>
+
+<!-- HEADER -->
+<header>
+    <div class="top-row">
+        <div class="left-header">
+            <button id="sidebar-toggle-btn" title="Open Menu">☰</button>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <svg class="header-logo" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="url(#hdr-grad)" d="M150 10 L270 90 L270 210 L150 290 L30 210 L30 90 Z" />
+                    <circle cx="150" cy="150" r="45" fill="#f8fafc" />
+                    <defs><linearGradient id="hdr-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+                </svg>
+                <h1>Studix</h1>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button id="bell-btn" title="Notifications">🔔<span id="bell-dot"></span></button>
+        </div>
+    </div>
+    <p style="margin-left:56px;">One app, endless learning — AI personal tutoring, error tracking, roadmaps, personal chat, and leave approvals.</p>
+    <div id="user-chip" style="display:none; margin-left:56px;"></div>
+</header>
+
+<nav id="tabs"></nav>
+
+<main>
+
+    <!-- QUOTE BANNER -->
+    <div class="quote-card" id="quote-card">
+        <div class="quote-icon">💡</div>
+        <div class="quote-body">
+            <div class="quote-text" id="quote-text">"Education is the most powerful weapon which you can use to change the world."</div>
+            <div class="quote-author" id="quote-author">— Nelson Mandela</div>
+        </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="card" id="about-card">
+        <svg class="app-logo" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+            <path fill="url(#abt-grad)" d="M150 10 L270 90 L270 210 L150 290 L30 210 L30 90 Z" />
+            <circle cx="150" cy="150" r="45" fill="#f8fafc" />
+            <path fill="#6366f1" d="M150 110 L180 170 L120 170 Z" />
+            <defs><linearGradient id="abt-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+        </svg>
+        <h1>Studix</h1>
+        <div class="motto">ONE APP, ENDLESS LEARNING</div>
+        <p class="about-text">Studix is an intelligent science exhibition classroom app featuring personalized AI tutoring, automated error tracking, leave management, personal chats, and early performance alerts.</p>
+        <div class="about-feature"><span>🥇</span><span><strong>AI Personal Tutor:</strong> Remembers your learning progress and adapts explanation depth to your grade.</span></div>
+        <div class="about-feature"><span>🥈</span><span><strong>AI Error Tracker:</strong> Automatically tracks quiz errors and generates targeted remediation practice.</span></div>
+        <div class="about-feature"><span>🥉</span><span><strong>AI Study Roadmap:</strong> Builds custom, optimized study plans targeting your specific weak areas.</span></div>
+        <div class="about-feature"><span>💬</span><span><strong>Personal Chat &amp; Moderation:</strong> Secure communication with teacher oversight and permissions.</span></div>
+        <div class="about-feature"><span>🏆</span><span><strong>Gamification:</strong> XP points, badges, streaks, achievements, and real-time leaderboards.</span></div>
+        <button class="btn" id="about-continue-btn" style="width:100%; margin-top:20px;">Get Started</button>
+    </div>
+
+    <!-- LOGIN CARD -->
+    <div class="card" id="login-card" style="display:none;">
+        <svg class="app-logo" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+            <path fill="url(#lgn-grad)" d="M150 10 L270 90 L270 210 L150 290 L30 210 L30 90 Z" />
+            <circle cx="150" cy="150" r="45" fill="#f8fafc" />
+            <path fill="#6366f1" d="M150 110 L180 170 L120 170 Z" />
+            <defs><linearGradient id="lgn-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+        </svg>
+        <h1>Studix</h1>
+        <div class="motto">ONE APP, ENDLESS LEARNING</div>
+
+        <div class="login-error" id="login-error"></div>
+
+        <button id="google-btn">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.4C29.7 35.4 27 36 24 36c-5.3 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.6 5.4C41.4 36.3 44 30.6 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+            Sign in with Google
+        </button>
+
+        <div class="auth-toggle">
+            <button id="show-google-tab" class="active" type="button">Google</button>
+            <button id="show-email-tab" type="button">Email &amp; Password</button>
+        </div>
+
+        <div id="email-auth-panel">
+            <div class="login-field-group" id="email-name-wrap" style="display:none;">
+                <label>👤 Full Name</label>
+                <input type="text" id="email-name-input" class="field" placeholder="Your full name">
+            </div>
+            <div class="login-field-group">
+                <label>✉️ Email</label>
+                <input type="email" id="email-input" class="field" placeholder="you@example.com">
+            </div>
+            <div class="login-field-group">
+                <label>🔑 Password</label>
+                <input type="password" id="password-input" class="field" placeholder="Min 6 characters">
+            </div>
+            <button class="btn" id="email-submit-btn" style="width:100%;">Sign In</button>
+            <span id="email-switch-mode">New here? Create an account instead</span>
+        </div>
+
+        <div id="role-picker">
+            <p style="font-size:12.5px; color:var(--text-muted);">First time here — tell us who you are:</p>
+            <div class="login-field-group">
+                <select id="signup-role-input" class="field">
+                    <option value="student">I'm a Student</option>
+                    <option value="teacher">I'm a Teacher</option>
+                    <option value="parent">I'm a Parent</option>
+                </select>
+            </div>
+            <div class="login-field-group" id="signup-grade-wrap">
+                <input type="text" id="signup-grade-input" class="field" placeholder="Grade, e.g. Grade 9">
+            </div>
+            <div class="login-field-group" id="parent-email-wrap" style="display:none;">
+                <input type="email" id="parent-child-email" class="field" placeholder="Your child's Studix email">
+            </div>
+            <button class="btn" id="finish-signup-btn" style="width:100%;">Continue</button>
+        </div>
+    </div>
+
+    <!-- APP CONTENT -->
+    <div id="app-content" style="display:none;">
+
+        <!-- DASHBOARD -->
+        <section id="tab-dashboard" class="active">
+            <div class="card">
+                <div class="dash-greeting">
+                    <img id="dash-photo" src="" onerror="this.style.display='none'">
+                    <div>
+                        <div class="name" id="dash-name">—</div>
+                        <div class="sub" id="dash-sub">—</div>
+                    </div>
+                </div>
+                <div class="stat-grid" id="dash-stats"></div>
+            </div>
+            <div class="card" id="alert-card-box" style="display:none; border-color:var(--accent-red);">
+                <h2 class="section-title" style="color:var(--accent-red);">🚨 Early Learning Alert</h2>
+                <p id="alert-msg-text" style="font-size:13.5px; color:var(--text-main); margin:0;"></p>
+            </div>
+            <div class="card">
+                <h2 class="section-title">📌 Due Soon</h2>
+                <div id="dash-homework"><p class="empty-hint">No homework posted yet.</p></div>
+            </div>
+            <div class="card">
+                <h2 class="section-title">📖 Recent Doubts</h2>
+                <div id="dash-doubts"><p class="empty-hint">No doubts asked yet.</p></div>
+            </div>
+        </section>
+
+        <!-- AI CHAT -->
+        <section id="tab-ai">
+            <div class="card">
+                <h2 class="section-title">🥇 AI Personal Tutor — Adapts to Your Learning Progress</h2>
+                <div class="timer-pill" id="session-timer">⏱ Session active: 60:00 remaining</div>
+                <div id="chat-window"></div>
+                <img id="img-preview">
+                <div class="chat-input-row">
+                    <button class="icon-btn" id="mic-btn" title="Speak your question">🎤</button>
+                    <textarea id="chat-input" placeholder="Ask your personal tutor anything... e.g. Explain photosynthesis"></textarea>
+                    <input type="file" id="img-input" accept="image/*" style="display:none;">
+                    <button class="icon-btn" id="img-btn" title="Upload an image">🖼️</button>
+                    <button class="icon-btn" id="send-btn" title="Send">➤</button>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="section-title">✨ Creative Corner &amp; Smart Prompts</h2>
+                <span class="prompt-chip">Explain Newton's 3rd law with a real example</span>
+                <span class="prompt-chip">Quiz me on the periodic table</span>
+                <span class="prompt-chip">Help me write an intro for my project</span>
+                <span class="prompt-chip">Give me a fun fact about the human body</span>
+            </div>
+        </section>
+
+        <!-- ERROR TRACKER -->
+        <section id="tab-mistakes">
+            <div class="card">
+                <h2 class="section-title">🥈 AI Error Tracker &amp; Remediation</h2>
+                <p class="subtle">Automatically logs questions you missed in quizzes and generates custom remediation practice.</p>
+                <div id="mistakes-list"><p class="empty-hint">No recorded errors yet. Take a quiz to populate your tracker!</p></div>
+                <button class="btn" id="generate-remediation-btn" style="margin-top:10px; display:none;">Generate Targeted Practice Test</button>
+                <div id="remediation-area" style="margin-top:14px;"></div>
+            </div>
+        </section>
+
+        <!-- STUDY ROADMAP -->
+        <section id="tab-roadmap">
+            <div class="card">
+                <h2 class="section-title">🥉 AI Study Roadmap &amp; Planner</h2>
+                <p class="subtle">Enter your upcoming exam or target goal to generate a personalized step-by-step study schedule.</p>
+                <input type="text" id="roadmap-exam-input" class="field" placeholder="Exam or Goal, e.g. Final Science Exam in 2 weeks">
+                <button class="btn" id="roadmap-generate-btn">Generate Personalized Roadmap</button>
+                <div id="roadmap-area" style="margin-top:14px;"></div>
+            </div>
+        </section>
+
+        <!-- LEAVE -->
+        <section id="tab-leave">
+            <div class="card" id="student-leave-card" style="display:none;">
+                <h2 class="section-title">📝 Request Leave</h2>
+                <p class="subtle">Submit your leave dates and reason to your teacher for approval.</p>
+                <label style="font-size:12px; color:var(--text-muted);">From Date</label>
+                <input type="date" id="leave-from-date" class="field">
+                <label style="font-size:12px; color:var(--text-muted);">To Date</label>
+                <input type="date" id="leave-to-date" class="field">
+                <textarea id="leave-reason" class="field" placeholder="Reason for leave..." style="resize:none; height:80px;"></textarea>
+                <button class="btn" id="submit-leave-btn">Submit Leave Request</button>
+            </div>
+            <div class="card">
+                <h2 class="section-title">📋 Leave Records &amp; Status</h2>
+                <div id="leave-records-list"><p class="empty-hint">No leave applications submitted yet.</p></div>
+            </div>
+        </section>
+
+        <!-- DM -->
+        <section id="tab-dm">
+            <div class="card" id="chat-requests-card" style="display:none;">
+                <h2 class="section-title">📩 Chat Requests</h2>
+                <div id="chat-requests-list"><p class="empty-hint">No pending requests.</p></div>
+            </div>
+            <div class="card">
+                <h2 class="section-title">💬 Direct Chat &amp; Messaging</h2>
+                <p class="subtle">Chat with teachers directly. Student-to-student chats require an accepted request.</p>
+                <select id="dm-user-select" class="field"><option value="">Select recipient...</option></select>
+                <div id="dm-status-box" style="margin-bottom:10px;"></div>
+                <div id="dm-chat-window" style="display:none;"></div>
+                <div class="chat-input-row" id="dm-input-row" style="display:none;">
+                    <textarea id="dm-input" placeholder="Type a message..."></textarea>
+                    <button class="icon-btn" id="dm-send-btn" title="Send">➤</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODERATION (Teacher only) -->
+        <section id="tab-moderation">
+            <div class="card">
+                <h2 class="section-title">⚙️ Chat Moderation &amp; Controls</h2>
+                <p class="subtle">Manage student chat permissions and temporarily block misuse.</p>
+                <div id="student-moderation-list"><p class="empty-hint">Loading student directory...</p></div>
+            </div>
+        </section>
+
+        <!-- DOUBTS -->
+        <section id="tab-doubts">
+            <div class="card">
+                <h2 class="section-title">📖 Doubt History</h2>
+                <p class="subtle">Every question you've submitted is saved automatically.</p>
+                <div id="doubts-list"><p class="empty-hint">No doubts asked yet — go ask something!</p></div>
+            </div>
+        </section>
+
+        <!-- GOALS -->
+        <section id="tab-goals">
+            <div class="card">
+                <h2 class="section-title">🎯 Study Goals &amp; Gamified Streaks</h2>
+                <p class="subtle">Set small daily/weekly goals, maintain your streaks, and tick them off to earn XP.</p>
+                <div class="chat-input-row" style="margin-bottom:14px;">
+                    <input type="text" id="goal-input" class="field" style="margin-bottom:0;" placeholder="e.g. Finish Ch 4 numericals">
+                    <button class="icon-btn" id="goal-add-btn">➕</button>
+                </div>
+                <div id="goals-list"><p class="empty-hint">No goals yet — add one above.</p></div>
+            </div>
+        </section>
+
+        <!-- QUIZ -->
+        <section id="tab-quiz">
+            <div class="card">
+                <h2 class="section-title">📝 AI Exam / Mock Test Mode</h2>
+                <p class="subtle">Pick a topic, select your language support, and build a quick practice quiz or flashcards.</p>
+                <input type="text" id="quiz-topic-input" class="field" placeholder="Topic, e.g. Photosynthesis">
+                <select id="quiz-lang-select" class="field">
+                    <option value="English">English Support</option>
+                    <option value="Hindi">Hindi Support (हिंदी)</option>
+                    <option value="Marathi">Marathi Support (मराठी)</option>
+                </select>
+                <button class="btn" id="quiz-generate-btn">Generate Quiz / Test</button>
+                <div id="quiz-area" style="margin-top:14px;"></div>
+            </div>
+        </section>
+
+        <!-- HOMEWORK - Teacher View -->
+        <section id="tab-homework">
+            <!-- Teacher: Post Homework -->
+            <div class="card" id="homework-post-card" style="display:none;">
+                <h2 class="section-title">📌 Post Homework / Reminder</h2>
+                <input type="text" id="hw-title-input" class="field" placeholder="Title, e.g. Ch 3 exercise">
+                <input type="date" id="hw-date-input" class="field">
+                <input type="text" id="hw-details-input" class="field" placeholder="Details (optional)">
+                <button class="btn" id="hw-post-btn">Post to class</button>
+            </div>
+
+            <!-- Teacher: Check Submissions -->
+            <div class="card" id="teacher-homework-checker-card" style="display:none;">
+                <h2 class="section-title">🤖 AI Homework Checker</h2>
+                <p class="subtle">Review student submissions, let AI analyze answers, generate remarks, and approve feedback.</p>
+                <div id="teacher-submissions-list"><p class="empty-hint">No student submissions to review right now.</p></div>
+            </div>
+
+            <!-- Student: Submit Homework -->
+            <div class="card" id="student-homework-submit-card" style="display:none;">
+                <h2 class="section-title">📤 Submit Homework</h2>
+                <p class="subtle">Choose an assigned homework, attach your work, and send it to your teacher.</p>
+                <select id="student-hw-select" class="field"><option value="">Select assigned homework</option></select>
+                <div class="file-box" onclick="document.getElementById('student-hw-file').click();">
+                    <input type="file" id="student-hw-file" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;">
+                    <div id="student-hw-file-name" class="subtle" style="margin:0;">Click to attach homework file (PDF, Image, Doc)</div>
+                </div>
+                <button class="btn" id="student-hw-submit-btn">Submit Homework</button>
+                <div id="student-hw-submit-status" style="font-size:12px;margin-top:10px;"></div>
+            </div>
+
+            <!-- Student: View My Submissions -->
+            <div class="card" id="student-my-submissions-card" style="display:none;">
+                <h2 class="section-title">📄 My Homework Submissions</h2>
+                <p class="subtle">View all your submitted homework and teacher remarks.</p>
+                <div id="student-my-submissions-list"><p class="empty-hint">You haven't submitted any homework yet.</p></div>
+            </div>
+
+            <!-- All: View Assigned Homework -->
+            <div class="card">
+                <h2 class="section-title">📌 Assigned Homework &amp; Deadlines</h2>
+                <div id="homework-list"><p class="empty-hint">No homework posted yet.</p></div>
+            </div>
+        </section>
+
+        <!-- ATTENDANCE -->
+        <section id="tab-attendance">
+            <div class="card" id="attendance-mark-card" style="display:none;">
+                <h2 class="section-title">🗓️ Mark Attendance</h2>
+                <input type="date" id="att-date-input" class="field">
+                <div id="att-mark-list"></div>
+                <button class="btn" id="att-save-btn">Save Attendance</button>
+                <p id="att-status" style="font-size:12px; color:var(--text-muted);"></p>
+            </div>
+            <div class="card">
+                <h2 class="section-title">🗓️ My Attendance</h2>
+                <div class="stat-grid">
+                    <div class="stat-box"><span class="num" id="att-percent">–</span><span class="lbl">Present %</span></div>
+                    <div class="stat-box"><span class="num" id="att-days">–</span><span class="lbl">Days Recorded</span></div>
+                </div>
+                <div id="att-history"></div>
+            </div>
+        </section>
+
+        <!-- QUESTION PAPERS (Teacher only) -->
+        <section id="tab-papers">
+            <div class="card" id="paper-gen-card" style="display:none;">
+                <h2 class="section-title">🧾 AI Printable Question Paper Generator</h2>
+                <input type="text" id="paper-topic-input" class="field" placeholder="Topic / chapter, e.g. Force and Laws of Motion">
+                <input type="text" id="paper-marks-input" class="field" placeholder="Total marks, e.g. 25">
+                <button class="btn" id="paper-generate-btn">Generate Printable Question Paper</button>
+            </div>
+            <div class="card">
+                <h2 class="section-title">🧾 Printable Question Papers</h2>
+                <div id="papers-list"><p class="empty-hint">No question papers yet.</p></div>
+            </div>
+        </section>
+
+        <!-- PROGRESS -->
+        <section id="tab-progress">
+            <div class="card" id="progress-select-card" style="display:none;">
+                <h2 class="section-title">📊 View Student Progress Analytics</h2>
+                <select id="progress-student-select" class="field"></select>
+            </div>
+            <div class="card">
+                <h2 class="section-title">📊 Advanced Progress Analytics</h2>
+                <div class="stat-grid">
+                    <div class="stat-box"><span class="num" id="pr-quiz-avg">–</span><span class="lbl">Avg Quiz Score</span></div>
+                    <div class="stat-box"><span class="num" id="pr-attendance">–</span><span class="lbl">Attendance %</span></div>
+                    <div class="stat-box"><span class="num" id="pr-goals">–</span><span class="lbl">Goals Completed</span></div>
+                    <div class="stat-box"><span class="num" id="pr-points">–</span><span class="lbl">Leaderboard XP 🔥</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TEACHERS -->
+        <section id="tab-teachers">
+            <div class="card">
+                <h2 class="section-title">👩‍🏫 Know Your Teachers</h2>
+                <p class="subtle">Get to know the teachers, subjects taught, and contact details for your grade.</p>
+                <div id="teachers-info-list"><p class="empty-hint">Loading teacher information...</p></div>
+            </div>
+        </section>
+
+        <!-- LEADERBOARD -->
+        <section id="tab-leaderboard">
+            <div class="card">
+                <h2 class="section-title">🏆 Class Ranking, Badges &amp; Gamification</h2>
+                <p class="subtle">Earn achievements, XP badges, and points from quizzes to improve your class ranking!</p>
+                <div id="leaderboard-list"><p class="empty-hint">No scores yet.</p></div>
+            </div>
+        </section>
+
+        <!-- PARENT -->
+        <section id="tab-parent">
+            <div class="card">
+                <h2 class="section-title">👨‍👩‍👧 Parent Dashboard &amp; Early Alert</h2>
+                <p class="subtle" id="parent-child-label">Showing your child's activity, homework updates, and early alerts.</p>
+                <div class="stat-grid">
+                    <div class="stat-box"><span class="num" id="pd-quiz-avg">–</span><span class="lbl">Avg Quiz Score</span></div>
+                    <div class="stat-box"><span class="num" id="pd-attendance">–</span><span class="lbl">Attendance %</span></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="section-title">📌 Homework Tracking</h2>
+                <div id="pd-homework-list"><p class="empty-hint">No homework posted yet.</p></div>
+            </div>
+        </section>
+
+        <!-- GROUP -->
+        <section id="tab-group">
+            <div class="card">
+                <h2 class="section-title">👥 Group Study Chat</h2>
+                <p class="subtle">Everyone in class shares this room. Solve doubts, share assignments, help each other.</p>
+                <div id="group-window"></div>
+                <div id="group-block-notice" style="display:none; color: var(--accent-red); font-size:13px; margin-bottom:10px;">⚠️ You have been temporarily blocked by a teacher from sending messages.</div>
+                <div class="chat-input-row" id="group-input-box">
+                    <textarea id="group-input" placeholder="Message the class..."></textarea>
+                    <button class="icon-btn" id="group-send-btn" title="Send">➤</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIDEO (Google Meet) -->
+        <section id="tab-video">
+            <div class="card">
+                <h2 class="section-title">🎥 Live Class / Group Study Call</h2>
+                <p class="subtle">Enter a Google Meet link to join or start a session.</p>
+                <div id="video-holder">
+                    <input type="text" id="meet-link-input" class="field" placeholder="Paste Google Meet link (e.g. https://meet.google.com/abc-defg-hij)">
+                    <button class="btn" id="join-meet-btn">Join Google Meet</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TEACHER MATERIALS -->
+        <section id="tab-teacher">
+            <div class="card" id="teacher-upload-card" style="display:none;">
+                <h2 class="section-title">📤 Share Material &amp; Study Notes</h2>
+                <p class="subtle">Upload your file to Google Drive, set sharing to "Anyone with the link," then paste it here.</p>
+                <input type="text" id="material-name-input" class="field" placeholder="Title, e.g. Ch 3 Worksheet">
+                <input type="text" id="material-link-input" class="field" placeholder="Paste Google Drive link here">
+                <button class="btn" id="material-upload-btn">Share with class</button>
+                <p id="upload-status" style="font-size:12px; color:var(--text-muted);"></p>
+            </div>
+            <div class="card">
+                <h2 class="section-title">📚 Class Materials &amp; AI Notes Generator</h2>
+                <div id="materials-list"><p class="empty-hint">No materials yet.</p></div>
+            </div>
+        </section>
+
+    </div><!-- /app-content -->
+</main>
+
+<!-- NOTIFICATIONS -->
+<div id="notif-overlay"></div>
+<div id="notif-panel">
+    <h2 class="section-title">🔔 Smart Notifications</h2>
+    <div id="notif-list"><p class="empty-hint">Nothing new right now.</p></div>
+</div>
+
+<footer>Studix — Built for Science Exhibition &amp; Classroom Collaboration</footer>
+
+<script>
+    /* ============================================================
+       AI CALLS — via Puter.js (no secret key exposed client-side).
+       Note: the previous version of this file called the Groq API
+       directly from the browser with a hardcoded key. That key was
+       visible to anyone who viewed the page source, letting them
+       burn your Groq quota or run up a bill. Puter handles its own
+       sign-in internally and never exposes a secret here.
+       ============================================================ */
+    async function callGroqAI(promptText) {
+        try {
+            const resp = await Promise.race([
+                puter.ai.chat(promptText),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 25000))
+            ]);
+            const text = resp?.message?.content || (typeof resp === 'string' ? resp : resp?.toString());
+            if (!text) throw new Error('Empty response');
+            return text;
+        } catch (err) {
+            console.error("AI Error:", err);
+            throw err;
+        }
+    }
+
+    /* ============================================================
+       FIREBASE SETUP
+       ------------------------------------------------------------
+       Safe to expose publicly — Firebase apps are protected by
+       Database Rules + Authentication, not by hiding this config.
+       Recommended Realtime Database rules (Firebase Console >
+       Realtime Database > Rules) so only signed-in users can
+       read/write:
+         { "rules": { ".read": "auth != null", ".write": "auth != null" } }
+       ============================================================ */
+    const firebaseConfig = {
+        apiKey: "AIzaSyC2xXg69p0EHMwDE-R-X0EIdzMqgXxUAYY",
+        authDomain: "studix2.firebaseapp.com",
+        databaseURL: "https://studix2-default-rtdb.firebaseio.com",
+        projectId: "studix2",
+        storageBucket: "studix2.firebasestorage.app",
+        messagingSenderId: "596715294214",
+        appId: "1:596715294214:web:293292c51ef0db3f46fd87"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
+    function emailKey(email) { return email.toLowerCase().replace(/[.#$\[\]]/g, '_'); }
+
+    /* ============================================================
+       FIREBASE-BACKED DATA LAYER
+       ------------------------------------------------------------
+       Drop-in replacement for the old localStorage layer. Every
+       other function in this file (getMap, setUser, pushToArray,
+       readStore, writeStore, etc.) is untouched and keeps working
+       exactly as before — only getStore/saveStore below now talk
+       to Firebase Realtime Database instead of localStorage, so
+       every student/teacher/parent shares the same live data.
+       ============================================================ */
+    const STORAGE_REF = db.ref('studixData');
+    let store = null;
+
+    function defaultStoreShape() {
+        return {
+            users: {},
+            usersByEmail: {},
+            notifications: {},
+            doubts: {},
+            goals: {},
+            attendance: {},
+            quizScores: {},
+            homework: [],
+            homeworkSubmissions: [],
+            groupChat: [],
+            directMessages: {},
+            chatRequests: {},
+            leaveRequests: [],
+            materials: [],
+            questionPapers: [],
+            mistakes: {},
+        };
+    }
+
+    function loadStoreFromFirebase() {
+        return STORAGE_REF.once('value').then(snap => {
+            store = snap.val() || defaultStoreShape();
+            // Keep the local cache live so other users' changes show up
+            // without needing a manual refresh.
+            STORAGE_REF.on('value', s => { if (s.exists()) store = s.val(); });
+            return store;
+        });
+    }
+
+    function getStore() {
+        return store;
+    }
+
+    function saveStore(data) {
+        store = data; // optimistic local update so callers can read it back immediately
+        STORAGE_REF.set(data).catch(err => console.error('Firebase sync failed:', err));
+    }
+
+    function initStore() {
+        if (!store) {
+            store = defaultStoreShape();
+            saveStore(store);
+        }
+        return store;
+    }
+
+    function readStore() {
+        return getStore() || initStore();
+    }
+
+    function writeStore(store) {
+        saveStore(store);
+    }
+
+    function getMap(collection) {
+        const s = readStore();
+        return s[collection] || {};
+    }
+
+    function setMap(collection, map) {
+        const s = readStore();
+        s[collection] = map;
+        writeStore(s);
+    }
+
+    function pushToMap(collection, key, value) {
+        const s = readStore();
+        if (!s[collection]) s[collection] = {};
+        s[collection][key] = value;
+        writeStore(s);
+    }
+
+    function getFromMap(collection, key) {
+        const s = readStore();
+        return s[collection] ? s[collection][key] : undefined;
+    }
+
+    function getAllFromMap(collection) {
+        const s = readStore();
+        return s[collection] || {};
+    }
+
+    function pushToArray(collection, item) {
+        const s = readStore();
+        if (!s[collection]) s[collection] = [];
+        s[collection].push(item);
+        writeStore(s);
+        return item;
+    }
+
+    function getArray(collection) {
+        const s = readStore();
+        return s[collection] || [];
+    }
+
+    function setArray(collection, arr) {
+        const s = readStore();
+        s[collection] = arr;
+        writeStore(s);
+    }
+
+    function getUser(uid) {
+        return getFromMap('users', uid);
+    }
+
+    function setUser(uid, data) {
+        pushToMap('users', uid, data);
+    }
+
+    function getAllUsers() {
+        return getAllFromMap('users');
+    }
+
+    function getUsersByRole(role) {
+        const all = getAllUsers();
+        const result = {};
+        Object.entries(all).forEach(([uid, u]) => { if (u.role === role) result[uid] = u; });
+        return result;
+    }
+
+    function addNotification(uid, text) {
+        const s = readStore();
+        if (!s.notifications) s.notifications = {};
+        if (!s.notifications[uid]) s.notifications[uid] = [];
+        s.notifications[uid].push({ text, time: Date.now() });
+        writeStore(s);
+    }
+
+    function getNotifications(uid) {
+        const s = readStore();
+        return (s.notifications && s.notifications[uid]) || [];
+    }
+
+    function genId() { return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+
+    /* ============================================================
+       STUDY QUOTES
+       ============================================================ */
+    const STUDY_QUOTES = [
+        { quote: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
+        { quote: "Live as if you were to die tomorrow. Learn as if you were to live forever.", author: "Mahatma Gandhi" },
+        { quote: "The beautiful thing about learning is that no one can take it away from you.", author: "B.B. King" },
+        { quote: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+        { quote: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+        { quote: "The expert in anything was once a beginner.", author: "Helen Hayes" }
+    ];
+
+    function initStudyQuotes() {
+        const qText = document.getElementById('quote-text');
+        const qAuth = document.getElementById('quote-author');
+        let idx = 0;
+        setInterval(() => {
+            idx = (idx + 1) % STUDY_QUOTES.length;
+            qText.textContent = `"${STUDY_QUOTES[idx].quote}"`;
+            qAuth.textContent = `— ${STUDY_QUOTES[idx].author}`;
+        }, 10000);
+    }
+
+    /* ============================================================
+       USER STATE
+       ============================================================ */
+    let currentUser = null;
+    let parentChildUid = null;
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
+
+    function triggerCelebrationBanner(msg) {
+        const existing = document.querySelector('.celebration-banner');
+        if (existing) existing.remove();
+        const banner = document.createElement('div');
+        banner.className = 'celebration-banner';
+        banner.textContent = msg;
+        const main = document.querySelector('main');
+        main.insertBefore(banner, main.firstChild);
+        setTimeout(() => { if (banner) banner.remove(); }, 5000);
+    }
+
+    /* ============================================================
+       SPLASH
+       ============================================================ */
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('splash').style.display = 'none';
+        }, 900);
+        initStudyQuotes();
+    });
+
+    /* ============================================================
+       SIDEBAR
+       ============================================================ */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+
+    function openSidebar() { sidebar.classList.add('open');
+        sidebarOverlay.classList.add('open'); }
+
+    function closeSidebar() { sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('open'); }
+    sidebarToggleBtn.addEventListener('click', openSidebar);
+    sidebarCloseBtn.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+
+    /* ============================================================
+       ABOUT -> LOGIN
+       ============================================================ */
+    document.getElementById('about-continue-btn').onclick = () => {
+        document.getElementById('about-card').style.display = 'none';
+        document.getElementById('login-card').style.display = 'block';
+    };
+
+    /* ============================================================
+       FIREBASE AUTH — Google + Email/Password
+       ============================================================ */
+    let pendingAuthUser = null;
+    const errEl = document.getElementById('login-error');
+
+    document.getElementById('google-btn').onclick = () => {
+        errEl.textContent = '';
+        auth.signInWithPopup(googleProvider).catch(err => {
+            console.error(err);
+            errEl.textContent = '❌ ' + err.message;
+        });
+    };
+
+    document.getElementById('show-google-tab').onclick = () => {
+        document.getElementById('show-google-tab').classList.add('active');
+        document.getElementById('show-email-tab').classList.remove('active');
+        document.getElementById('google-btn').style.display = 'flex';
+        document.getElementById('email-auth-panel').style.display = 'none';
+    };
+    document.getElementById('show-email-tab').onclick = () => {
+        document.getElementById('show-email-tab').classList.add('active');
+        document.getElementById('show-google-tab').classList.remove('active');
+        document.getElementById('google-btn').style.display = 'none';
+        document.getElementById('email-auth-panel').style.display = 'block';
+    };
+
+    let emailAuthMode = 'signin';
+    function setEmailAuthMode(mode) {
+        emailAuthMode = mode;
+        document.getElementById('email-name-wrap').style.display = mode === 'signup' ? 'block' : 'none';
+        document.getElementById('email-submit-btn').textContent = mode === 'signup' ? 'Create Account' : 'Sign In';
+        document.getElementById('email-switch-mode').textContent = mode === 'signup' ? 'Already have an account? Sign in instead' : 'New here? Create an account instead';
+        errEl.textContent = '';
+    }
+    document.getElementById('email-switch-mode').onclick = () => setEmailAuthMode(emailAuthMode === 'signin' ? 'signup' : 'signin');
+
+    document.getElementById('email-submit-btn').onclick = async () => {
+        const email = document.getElementById('email-input').value.trim();
+        const password = document.getElementById('password-input').value;
+        const name = document.getElementById('email-name-input').value.trim();
+        errEl.textContent = '';
+        if (!email || !password || password.length < 6) {
+            errEl.textContent = '❌ Enter a valid email and a password of at least 6 characters.';
+            return;
+        }
+        try {
+            if (emailAuthMode === 'signup') {
+                if (!name) { errEl.textContent = '❌ Enter your full name.'; return; }
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await cred.user.updateProfile({ displayName: name });
+            } else {
+                await auth.signInWithEmailAndPassword(email, password);
+            }
+            // onAuthStateChanged below takes it from here
+        } catch (err) {
+            console.error(err);
+            errEl.textContent = '❌ ' + err.message;
+        }
+    };
+
+    document.getElementById('signup-role-input').addEventListener('change', (e) => {
+        document.getElementById('parent-email-wrap').style.display = e.target.value === 'parent' ? 'block' : 'none';
+        document.getElementById('signup-grade-wrap').style.display = e.target.value === 'student' ? 'block' : 'none';
+    });
+
+    document.getElementById('finish-signup-btn').onclick = () => {
+        if (!pendingAuthUser) return;
+        const user = pendingAuthUser;
+        const role = document.getElementById('signup-role-input').value;
+        const grade = document.getElementById('signup-grade-input').value.trim();
+        const userData = {
+            name: user.displayName || user.email,
+            email: user.email,
+            role: role,
+            grade: role === 'student' ? (grade || 'Grade 9') : '',
+            points: 0,
+            createdAt: Date.now(),
+            isBlocked: false
+        };
+        setUser(user.uid, userData);
+        const s = readStore();
+        s.usersByEmail[emailKey(user.email)] = user.uid;
+        if (role === 'parent') {
+            const childEmail = document.getElementById('parent-child-email').value.trim();
+            if (childEmail) {
+                const childUid = s.usersByEmail[emailKey(childEmail)];
+                if (childUid) {
+                    userData.childUid = childUid;
+                    parentChildUid = childUid;
+                } else {
+                    errEl.textContent = "Couldn't find that student yet — ask them to sign in to Studix first, then update this from your dashboard.";
+                }
+            }
+        }
+        writeStore(s);
+
+        currentUser = {
+            uid: user.uid, name: userData.name, email: userData.email, role: userData.role,
+            grade: userData.grade, points: 0, isBlocked: false, photo: user.photoURL || ''
+        };
+        document.getElementById('login-card').style.display = 'none';
+        enterApp();
+    };
+
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            currentUser = null;
+            document.getElementById('app-content').style.display = 'none';
+            document.getElementById('user-chip').style.display = 'none';
+            return;
+        }
+        await loadStoreFromFirebase();
+        pendingAuthUser = user;
+        const existing = getUser(user.uid);
+        if (existing) {
+            currentUser = {
+                uid: user.uid, name: existing.name, email: existing.email, role: existing.role,
+                grade: existing.grade || '', points: existing.points || 0, isBlocked: existing.isBlocked || false,
+                photo: user.photoURL || ''
+            };
+            if (currentUser.role === 'parent') {
+                parentChildUid = existing.childUid || null;
+                if (!parentChildUid) {
+                    const students = getUsersByRole('student');
+                    if (Object.keys(students).length > 0) parentChildUid = Object.keys(students)[0];
+                }
+            }
+            document.getElementById('about-card').style.display = 'none';
+            document.getElementById('login-card').style.display = 'none';
+            enterApp();
+        } else {
+            document.getElementById('about-card').style.display = 'none';
+            document.getElementById('login-card').style.display = 'block';
+            document.getElementById('role-picker').style.display = 'block';
+            document.getElementById('google-btn').style.display = 'none';
+            document.getElementById('email-auth-panel').style.display = 'none';
+            document.querySelector('.auth-toggle').style.display = 'none';
+        }
+    });
+
+    /* ============================================================
+       ENTER APP
+       ============================================================ */
+    function signOut() {
+        auth.signOut();
+        currentUser = null;
+        parentChildUid = null;
+        document.getElementById('app-content').style.display = 'none';
+        document.getElementById('user-chip').style.display = 'none';
+        document.getElementById('about-card').style.display = 'block';
+        document.getElementById('login-card').style.display = 'none';
+        document.getElementById('login-error').textContent = '';
+        clearInterval(sessionInterval);
+    }
+
+    function enterApp() {
+        document.getElementById('login-card').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
+
+        const chip = document.getElementById('user-chip');
+        chip.style.display = 'flex';
+        chip.innerHTML = `
+          <span>👤 ${escapeHtml(currentUser.name)} · ${currentUser.role} ${currentUser.grade ? '('+escapeHtml(currentUser.grade)+')':''}</span>
+          <span id="logout-link" style="cursor:pointer;color:var(--marigold);text-decoration:underline;font-weight:600;">Sign out</span>
+        `;
+        document.getElementById('logout-link').onclick = signOut;
+
+        buildNav();
+        startSession();
+        greetUser(currentUser.name);
+
+        // Show role-specific sections
+        if (currentUser.role === 'teacher') {
+            document.getElementById('teacher-upload-card').style.display = 'block';
+            document.getElementById('homework-post-card').style.display = 'block';
+            document.getElementById('attendance-mark-card').style.display = 'block';
+            document.getElementById('paper-gen-card').style.display = 'block';
+            document.getElementById('progress-select-card').style.display = 'block';
+            document.getElementById('teacher-homework-checker-card').style.display = 'block';
+            document.getElementById('student-homework-submit-card').style.display = 'none';
+            document.getElementById('student-my-submissions-card').style.display = 'none';
+            document.getElementById('student-leave-card').style.display = 'none';
+            initModerationPanel();
+        } else if (currentUser.role === 'student') {
+            document.getElementById('student-homework-submit-card').style.display = 'block';
+            document.getElementById('student-my-submissions-card').style.display = 'block';
+            document.getElementById('student-leave-card').style.display = 'block';
+            document.getElementById('teacher-upload-card').style.display = 'none';
+            document.getElementById('homework-post-card').style.display = 'none';
+            document.getElementById('attendance-mark-card').style.display = 'none';
+            document.getElementById('paper-gen-card').style.display = 'none';
+            document.getElementById('progress-select-card').style.display = 'none';
+            document.getElementById('teacher-homework-checker-card').style.display = 'none';
+        }
+
+        initDashboard();
+        initGroupChat();
+        initDM();
+        initMaterials();
+        initDoubtHistory();
+        initGoals();
+        initHomework();
+        initAttendance();
+        initPapers();
+        initLeaderboard();
+        initProgress();
+        initTeachersInfo();
+        initNotifications();
+        initErrorTracker();
+        initRoadmap();
+        initLeaveManagement();
+        if (currentUser.role === 'parent') initParentDashboard();
+
+        document.getElementById('join-meet-btn').onclick = function() {
+            let link = document.getElementById('meet-link-input').value.trim();
+            if (!link) { alert('Please paste a Google Meet link.'); return; }
+            if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                link = 'https://' + link;
+            }
+            window.open(link, '_blank');
+            triggerCelebrationBanner('🔗 Opening Google Meet...');
+        };
+    }
+
+    /* ============================================================
+       NAV & SIDEBAR
+       ============================================================ */
+    const TAB_DEFS = {
+        student: [
+            ['dashboard', '🏠 Dashboard'],
+            ['ai', '🥇 AI Tutor'],
+            ['mistakes', '🥈 Error Tracker'],
+            ['roadmap', '🥉 Study Roadmap'],
+            ['leave', '📝 Leave'],
+            ['dm', '💬 Direct Chat'],
+            ['doubts', '📖 Doubts'],
+            ['goals', '🎯 Goals'],
+            ['quiz', '📝 Quiz'],
+            ['homework', '📌 Homework'],
+            ['attendance', '🗓️ Attendance'],
+            ['progress', '📊 Progress'],
+            ['teachers', '👩‍🏫 Teachers'],
+            ['leaderboard', '🏆 Leaderboard'],
+            ['group', '👥 Group Study'],
+            ['video', '🎥 Live Class']
+        ],
+        teacher: [
+            ['dashboard', '🏠 Dashboard'],
+            ['leave', '📝 Leave Approvals'],
+            ['dm', '💬 Direct Chat'],
+            ['moderation', '⚙️ Chat Controls'],
+            ['group', '👥 Group Study'],
+            ['video', '🎥 Live Class'],
+            ['homework', '📌 Homework'],
+            ['attendance', '🗓️ Attendance'],
+            ['papers', '🧾 Question Papers'],
+            ['progress', '📊 Progress'],
+            ['leaderboard', '🏆 Leaderboard'],
+            ['teacher', '📚 Teacher Corner']
+        ],
+        parent: [
+            ['parent', '👨‍👩‍👧 Parent Dashboard'],
+            ['homework', '📌 Homework']
+        ]
+    };
+
+    function switchTab(id) {
+        document.querySelectorAll('#tabs button, .sidebar-item').forEach(b => {
+            if (b.dataset.tab === id) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+        document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById('tab-' + id);
+        if (target) target.classList.add('active');
+        closeSidebar();
+    }
+
+    function buildNav() {
+        const tabs = TAB_DEFS[currentUser.role] || TAB_DEFS.student;
+        const nav = document.getElementById('tabs');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        nav.innerHTML = '';
+        sidebarNav.innerHTML = '';
+        tabs.forEach(([id, label], i) => {
+            const btn = document.createElement('button');
+            btn.textContent = label;
+            btn.dataset.tab = id;
+            if (i === 0) btn.classList.add('active');
+            btn.onclick = () => switchTab(id);
+            nav.appendChild(btn);
+            const sideBtn = document.createElement('button');
+            sideBtn.className = 'sidebar-item';
+            sideBtn.textContent = label;
+            sideBtn.dataset.tab = id;
+            if (i === 0) sideBtn.classList.add('active');
+            sideBtn.onclick = () => switchTab(id);
+            sidebarNav.appendChild(sideBtn);
+        });
+        switchTab(tabs[0][0]);
+    }
+
+    /* ============================================================
+       SESSION TIMER
+       ============================================================ */
+    let sessionSeconds = 60 * 60;
+    let sessionInterval;
+
+    function startSession() {
+        clearInterval(sessionInterval);
+        sessionSeconds = 60 * 60;
+        sessionInterval = setInterval(() => {
+            sessionSeconds--;
+            const m = String(Math.floor(sessionSeconds / 60)).padStart(2, '0');
+            const s = String(sessionSeconds % 60).padStart(2, '0');
+            document.getElementById('session-timer').textContent = `⏱ Session active: ${m}:${s} remaining`;
+            if (sessionSeconds <= 0) {
+                clearInterval(sessionInterval);
+                addMsg('bot', '• Your 1-hour study session has ended.\n• Refresh anytime to keep learning! 👋');
+                document.getElementById('chat-input').disabled = true;
+                document.getElementById('send-btn').disabled = true;
+            }
+        }, 1000);
+    }
+
+    /* ============================================================
+       AI CHAT
+       ============================================================ */
+    const chatWindow = document.getElementById('chat-window');
+
+    function addMsg(kind, text) {
+        const div = document.createElement('div');
+        div.className = 'msg ' + kind;
+        div.textContent = text;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function greetUser(name) {
+        addMsg('bot',
+            `• Hi ${name}! 👋 I'm your AI Personal Tutor tailored for ${currentUser.grade || 'your class'}.\n• I remember your learning progress and adapt explanations to your level.\n• Ask me anything from your science or math syllabus — type, speak, or upload image-questions.`
+            );
+    }
+
+    document.getElementById('img-btn').onclick = () => document.getElementById('img-input').click();
+    document.getElementById('img-input').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const preview = document.getElementById('img-preview');
+            preview.src = evt.target.result;
+            preview.style.display = 'block';
+            addMsg('system', '• Image attached successfully! Type your question about this image and click send.');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    document.getElementById('send-btn').onclick = sendMessage;
+    document.getElementById('chat-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
+            sendMessage(); }
+    });
+    document.querySelectorAll('.prompt-chip').forEach(chip => {
+        chip.onclick = () => {
+            document.getElementById('chat-input').value = chip.textContent;
+            sendMessage();
+        };
+    });
+
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+        addMsg('user', text);
+        input.value = '';
+        document.getElementById('img-preview').style.display = 'none';
+        addMsg('system', 'AI tutor thinking...');
+        const thinkingNode = chatWindow.lastChild;
+        try {
+            const prompt = `Student Grade: ${currentUser.grade || 'General'}. Question: ${text}`;
+            const reply = await callGroqAI(prompt);
+            thinkingNode.remove();
+            addMsg('bot', reply);
+            saveDoubt(text, reply);
+        } catch (err) {
+            thinkingNode.remove();
+            console.error(err);
+            addMsg('bot', '• Hmm, I had trouble answering that.\n• ' + (err?.message || err));
+        }
+    }
+
+    function saveDoubt(q, a) {
+        if (!currentUser) return;
+        const s = readStore();
+        if (!s.doubts) s.doubts = {};
+        if (!s.doubts[currentUser.uid]) s.doubts[currentUser.uid] = [];
+        s.doubts[currentUser.uid].push({ question: q, answer: a, time: Date.now() });
+        writeStore(s);
+    }
+
+    /* ============================================================
+       VOICE INPUT
+       ============================================================ */
+    let recognizing = false;
+    let recognition;
+    const micBtn = document.getElementById('mic-btn');
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-IN';
+        recognition.onresult = (e) => { document.getElementById('chat-input').value = e.results[0][0].transcript; };
+        recognition.onend = () => { recognizing = false;
+            micBtn.classList.remove('recording'); };
+        micBtn.onclick = () => {
+            if (recognizing) { recognition.stop(); return; }
+            recognizing = true;
+            micBtn.classList.add('recording');
+            recognition.start();
+        };
+    } else {
+        micBtn.onclick = () => alert('Voice input is not supported in this browser.');
+    }
+
+    /* ============================================================
+       ERROR TRACKER
+       ============================================================ */
+    function initErrorTracker() {
+        if (currentUser.role !== 'student') return;
+        const list = document.getElementById('mistakes-list');
+        const genBtn = document.getElementById('generate-remediation-btn');
+
+        function renderMistakes() {
+            const s = readStore();
+            const data = (s.mistakes && s.mistakes[currentUser.uid]) || [];
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="empty-hint">No recorded errors yet. Take a quiz to populate your tracker!</p>';
+                genBtn.style.display = 'none';
+                return;
+            }
+            list.innerHTML = '';
+            genBtn.style.display = 'block';
+            data.forEach(m => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.style.flexDirection = 'column';
+                row.style.alignItems = 'flex-start';
+                row.innerHTML =
+                    `<div style="font-weight:700; color:var(--accent-red);">❌ Question: ${escapeHtml(m.question)}</div>
+              <div style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">Topic: ${escapeHtml(m.topic)} | Your Answer: ${escapeHtml(m.userAnswer)}</div>`;
+                list.appendChild(row);
+            });
+        }
+        renderMistakes();
+
+        genBtn.onclick = async () => {
+            const area = document.getElementById('remediation-area');
+            area.innerHTML = '<p class="empty-hint">Generating targeted practice test based on your errors...</p>';
+            const s = readStore();
+            const mistakes = (s.mistakes && s.mistakes[currentUser.uid]) || [];
+            const topics = mistakes.map(m => m.topic).filter(Boolean);
+            const prompt =
+                `Create a 3-question targeted remediation quiz addressing errors in these topics: ${topics.join(', ') || 'general science'}. Reply with ONLY valid JSON matching this exact shape:
+{"questions":[{"q":"question text","options":["a","b","c","d"],"answer":0}]}`;
+            try {
+                const rawResp = await callGroqAI(prompt);
+                let raw = rawResp.replace(/```json|```/g, '').trim();
+                const firstBrace = raw.indexOf('{');
+                const lastBrace = raw.lastIndexOf('}');
+                if (firstBrace !== -1 && lastBrace !== -1) raw = raw.substring(firstBrace, lastBrace + 1);
+                const quiz = JSON.parse(raw);
+                renderRemediationQuiz(quiz.questions);
+            } catch (err) {
+                area.innerHTML = '<p class="empty-hint">Could not generate remediation test right now.</p>';
+            }
+        };
+    }
+
+    function renderRemediationQuiz(questions) {
+        const area = document.getElementById('remediation-area');
+        area.innerHTML = '<h3>Targeted Remediation Practice</h3>';
+        const answers = new Array(questions.length).fill(null);
+        questions.forEach((q, qi) => {
+            const block = document.createElement('div');
+            block.className = 'quiz-q';
+            block.innerHTML = `<p>${qi+1}. ${escapeHtml(q.q)}</p>`;
+            q.options.forEach((opt, oi) => {
+                const optEl = document.createElement('div');
+                optEl.className = 'quiz-opt';
+                optEl.textContent = opt;
+                optEl.onclick = () => {
+                    block.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected'));
+                    optEl.classList.add('selected');
+                    answers[qi] = oi;
+                };
+                block.appendChild(optEl);
+            });
+            area.appendChild(block);
+        });
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'btn';
+        submitBtn.style.marginTop = '10px';
+        submitBtn.textContent = 'Submit Remediation Quiz';
+        submitBtn.onclick = () => {
+            let score = 0;
+            area.querySelectorAll('.quiz-q').forEach((block, qi) => {
+                const opts = block.querySelectorAll('.quiz-opt');
+                opts[questions[qi].answer].classList.add('correct');
+                if (answers[qi] === questions[qi].answer) score++;
+            });
+            submitBtn.disabled = true;
+            triggerCelebrationBanner('🏆 Remediation Mastered! Errors cleared and XP credited!');
+            const s = readStore();
+            if (!s.users) s.users = {};
+            if (!s.users[currentUser.uid]) s.users[currentUser.uid] = {};
+            s.users[currentUser.uid].points = (s.users[currentUser.uid].points || 0) + score * 15;
+            writeStore(s);
+            currentUser.points = s.users[currentUser.uid].points;
+        };
+        area.appendChild(submitBtn);
+    }
+
+    /* ============================================================
+       STUDY ROADMAP
+       ============================================================ */
+    function initRoadmap() {
+        const btn = document.getElementById('roadmap-generate-btn');
+        if (!btn) return;
+        btn.onclick = async () => {
+            const exam = document.getElementById('roadmap-exam-input').value.trim();
+            const area = document.getElementById('roadmap-area');
+            if (!exam) { alert('Enter your exam or goal'); return; }
+            area.innerHTML = '<p class="empty-hint">Building your AI study roadmap...</p>';
+            const prompt =
+                `Create a comprehensive, personalized step-by-step study roadmap and schedule for the student goal: "${exam}". Format with clear weekly milestones and bullet points.`;
+            try {
+                const roadmap = await callGroqAI(prompt);
+                area.innerHTML =
+                    `<div class="remark-box" style="white-space:pre-wrap; font-size:14px;">${escapeHtml(roadmap)}</div>`;
+                triggerCelebrationBanner('🥉 Personalized study roadmap generated successfully!');
+            } catch (err) {
+                area.innerHTML = '<p class="empty-hint">Could not generate roadmap right now.</p>';
+            }
+        };
+    }
+
+    /* ============================================================
+       LEAVE MANAGEMENT
+       ============================================================ */
+    function initLeaveManagement() {
+        const leaveBtn = document.getElementById('submit-leave-btn');
+        if (leaveBtn) {
+            leaveBtn.onclick = () => {
+                const fromDate = document.getElementById('leave-from-date').value;
+                const toDate = document.getElementById('leave-to-date').value;
+                const reason = document.getElementById('leave-reason').value.trim();
+                if (!fromDate || !toDate || !reason) { alert('Please fill in all leave details.'); return; }
+                pushToArray('leaveRequests', {
+                    id: genId(),
+                    studentUid: currentUser.uid,
+                    studentName: currentUser.name,
+                    grade: currentUser.grade || 'N/A',
+                    fromDate,
+                    toDate,
+                    reason,
+                    status: 'pending',
+                    time: Date.now()
+                });
+                document.getElementById('leave-reason').value = '';
+                triggerCelebrationBanner('📝 Leave request submitted to your teacher!');
+                addNotification(currentUser.uid, 'Leave application submitted for approval.');
+                renderLeaveRecords();
+            };
+        }
+        renderLeaveRecords();
+    }
+
+    function renderLeaveRecords() {
+        const list = document.getElementById('leave-records-list');
+        const data = getArray('leaveRequests');
+        const filtered = data.filter(l => {
+            if (currentUser.role === 'student') return l.studentUid === currentUser.uid;
+            return true;
+        });
+        if (!filtered || filtered.length === 0) {
+            list.innerHTML = '<p class="empty-hint">No leave applications found.</p>';
+            return;
+        }
+        list.innerHTML = '';
+        filtered.reverse().forEach(l => {
+            const row = document.createElement('div');
+            row.className = 'list-item';
+            row.style.flexDirection = 'column';
+            row.style.alignItems = 'flex-start';
+            row.innerHTML = `
+            <div style="display:flex; justify-content:space-between; width:100%;">
+              <strong>${escapeHtml(l.studentName)} (${escapeHtml(l.grade)})</strong>
+              <span class="badge ${l.status==='approved'?'green':(l.status==='rejected'?'red':'')}">${l.status}</span>
+            </div>
+            <div style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">Dates: ${escapeHtml(l.fromDate)} to ${escapeHtml(l.toDate)}</div>
+            <div style="font-size:13px; margin-top:4px;">Reason: ${escapeHtml(l.reason)}</div>
+            ${currentUser.role === 'teacher' && l.status === 'pending' ? `
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn small" onclick="updateLeaveStatusLocal('${l.id}', 'approved')">✅ Approve</button>
+                <button class="btn small secondary" onclick="updateLeaveStatusLocal('${l.id}', 'rejected')">❌ Reject</button>
+              </div>
+            ` : ''}
+          `;
+            list.appendChild(row);
+        });
+    }
+
+    function updateLeaveStatusLocal(id, status) {
+        const data = getArray('leaveRequests');
+        const idx = data.findIndex(l => l.id === id);
+        if (idx !== -1) {
+            data[idx].status = status;
+            setArray('leaveRequests', data);
+            triggerCelebrationBanner(`Leave request ${status}!`);
+            addNotification(currentUser.uid, `Your leave request was ${status} by the teacher.`);
+            renderLeaveRecords();
+        }
+    }
+
+    /* ============================================================
+       DIRECT MESSAGING
+       ============================================================ */
+    let activeDmUid = null;
+    let activeTargetUser = null;
+
+    function initDM() {
+        const select = document.getElementById('dm-user-select');
+        renderUserSelect();
+
+        select.onchange = (e) => {
+            activeDmUid = e.target.value;
+            if (!activeDmUid) {
+                document.getElementById('dm-chat-window').style.display = 'none';
+                document.getElementById('dm-input-row').style.display = 'none';
+                document.getElementById('dm-status-box').innerHTML = '';
+                return;
+            }
+            activeTargetUser = getUser(activeDmUid);
+            checkDmPermissions();
+        };
+
+        document.getElementById('dm-send-btn').onclick = sendDmMsg;
+        document.getElementById('dm-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
+                sendDmMsg(); }
+        });
+
+        renderChatRequests();
+    }
+
+    function renderUserSelect() {
+        const select = document.getElementById('dm-user-select');
+        const users = getAllUsers();
+        select.innerHTML = '<option value="">Select recipient...</option>';
+        Object.entries(users).forEach(([uid, u]) => {
+            if (uid === currentUser.uid) return;
+            const opt = document.createElement('option');
+            opt.value = uid;
+            opt.textContent = `${u.name} (${u.role})`;
+            select.appendChild(opt);
+        });
+    }
+
+    function getDmRoomId(uid1, uid2) { return [uid1, uid2].sort().join('_'); }
+
+    function checkDmPermissions() {
+        const statusBox = document.getElementById('dm-status-box');
+        const chatWin = document.getElementById('dm-chat-window');
+        const inputRow = document.getElementById('dm-input-row');
+        statusBox.innerHTML = '';
+        chatWin.style.display = 'none';
+        inputRow.style.display = 'none';
+        if (!activeTargetUser) return;
+
+        if (currentUser.role === 'teacher' || activeTargetUser.role === 'teacher') {
+            chatWin.style.display = 'flex';
+            inputRow.style.display = 'flex';
+            loadDmChat();
+            return;
+        }
+
+        const reqId = getDmRoomId(currentUser.uid, activeDmUid);
+        const requests = getMap('chatRequests');
+        const req = requests[reqId];
+
+        if (!req) {
+            statusBox.innerHTML =
+                `<div style="font-size:13px; color:var(--text-muted); text-align:center;">
+              You need to send a chat request to talk with ${escapeHtml(activeTargetUser.name)}.
+              <br><br><button class="btn small" onclick="sendChatRequestLocal()">📩 Send Chat Request</button>
+            </div>`;
+        } else if (req.status === 'accepted') {
+            chatWin.style.display = 'flex';
+            inputRow.style.display = 'flex';
+            loadDmChat();
+        } else if (req.status === 'pending') {
+            if (req.senderUid === currentUser.uid) {
+                statusBox.innerHTML =
+                    `<div style="font-size:13px; color:var(--marigold); text-align:center;">⏳ Chat request sent. Waiting for acceptance...</div>`;
+            } else {
+                statusBox.innerHTML =
+                    `<div style="font-size:13px; color:var(--marigold); text-align:center;">
+                ${escapeHtml(activeTargetUser.name)} sent you a chat request.
+                <br><br><button class="btn small" onclick="acceptChatRequestLocal('${reqId}')">✅ Accept</button>
+              </div>`;
+            }
+        } else {
+            statusBox.innerHTML =
+                `<div style="font-size:13px; color:var(--accent-red); text-align:center;">❌ Chat request was declined.</div>`;
+        }
+    }
+
+    function sendChatRequestLocal() {
+        if (!activeDmUid) return;
+        const reqId = getDmRoomId(currentUser.uid, activeDmUid);
+        pushToMap('chatRequests', reqId, {
+            senderUid: currentUser.uid,
+            senderName: currentUser.name,
+            receiverUid: activeDmUid,
+            status: 'pending',
+            time: Date.now()
+        });
+        checkDmPermissions();
+        renderChatRequests();
+    }
+
+    function acceptChatRequestLocal(reqId) {
+        const reqs = getMap('chatRequests');
+        if (reqs[reqId]) {
+            reqs[reqId].status = 'accepted';
+            setMap('chatRequests', reqs);
+            checkDmPermissions();
+            renderChatRequests();
+        }
+    }
+
+    function renderChatRequests() {
+        const card = document.getElementById('chat-requests-card');
+        const list = document.getElementById('chat-requests-list');
+        const reqs = getMap('chatRequests');
+        let pending = 0;
+        list.innerHTML = '';
+        Object.entries(reqs).forEach(([reqId, req]) => {
+            if (req.receiverUid === currentUser.uid && req.status === 'pending') {
+                pending++;
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML =
+                    `<span><strong>${escapeHtml(req.senderName)}</strong> wants to chat with you</span>
+              <button class="btn small" onclick="acceptChatRequestLocal('${reqId}')">Accept</button>`;
+                list.appendChild(row);
+            }
+        });
+        card.style.display = pending > 0 ? 'block' : 'none';
+    }
+
+    function loadDmChat() {
+        const roomId = getDmRoomId(currentUser.uid, activeDmUid);
+        const win = document.getElementById('dm-chat-window');
+        const dms = getMap('directMessages');
+        const msgs = dms[roomId] || [];
+        if (!msgs || msgs.length === 0) {
+            win.innerHTML = '<p class="empty-hint" style="text-align:center;">No messages yet. Say hi!</p>';
+            return;
+        }
+        win.innerHTML = '';
+        msgs.forEach(m => {
+            const isMe = m.senderUid === currentUser.uid;
+            const div = document.createElement('div');
+            div.className = `gmsg ${isMe ? 'me' : 'other'}`;
+            div.innerHTML = `<div class="who">${escapeHtml(m.senderName)}</div><div>${escapeHtml(m.text)}</div>`;
+            win.appendChild(div);
+        });
+        win.scrollTop = win.scrollHeight;
+    }
+
+    function sendDmMsg() {
+        const input = document.getElementById('dm-input');
+        const text = input.value.trim();
+        if (!text || !activeDmUid) return;
+        const roomId = getDmRoomId(currentUser.uid, activeDmUid);
+        const dms = getMap('directMessages');
+        if (!dms[roomId]) dms[roomId] = [];
+        dms[roomId].push({ senderUid: currentUser.uid, senderName: currentUser.name, text, time: Date.now() });
+        setMap('directMessages', dms);
+        input.value = '';
+        loadDmChat();
+    }
+
+    /* ============================================================
+       MODERATION
+       ============================================================ */
+    function initModerationPanel() {
+        const list = document.getElementById('student-moderation-list');
+        renderModerationList();
+
+        function renderModerationList() {
+            const users = getAllUsers();
+            list.innerHTML = '';
+            Object.entries(users).forEach(([uid, u]) => {
+                if (u.role !== 'student') return;
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML =
+                    `<span><strong>${escapeHtml(u.name)}</strong> (${escapeHtml(u.grade||'N/A')})</span>
+              <button class="btn small ${u.isBlocked?'secondary':'danger'}" onclick="toggleUserBlockLocal('${uid}', ${!u.isBlocked})">
+                ${u.isBlocked ? '🔓 Unblock Chat' : '🚫 Block Chat'}
+              </button>`;
+                list.appendChild(row);
+            });
+        }
+
+        window.toggleUserBlockLocal = function(uid, blockState) {
+            const user = getUser(uid);
+            if (user) {
+                user.isBlocked = blockState;
+                setUser(uid, user);
+                if (uid === currentUser.uid) currentUser.isBlocked = blockState;
+                renderModerationList();
+                triggerCelebrationBanner(`Student chat permission updated!`);
+            }
+        };
+    }
+
+    /* ============================================================
+       GROUP CHAT
+       ============================================================ */
+    function initGroupChat() {
+        const win = document.getElementById('group-window');
+        const input = document.getElementById('group-input');
+        const sendBtn = document.getElementById('group-send-btn');
+        const notice = document.getElementById('group-block-notice');
+        const inputBox = document.getElementById('group-input-box');
+
+        const userData = getUser(currentUser.uid);
+        if (userData && userData.isBlocked) {
+            currentUser.isBlocked = true;
+            notice.style.display = 'block';
+            inputBox.style.display = 'none';
+        } else {
+            currentUser.isBlocked = false;
+            notice.style.display = 'none';
+            inputBox.style.display = 'flex';
+        }
+
+        renderGroupChat();
+
+        sendBtn.onclick = sendGroupMsg;
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
+                sendGroupMsg(); }
+        });
+
+        setInterval(renderGroupChat, 3000);
+    }
+
+    function renderGroupChat() {
+        const win = document.getElementById('group-window');
+        const msgs = getArray('groupChat');
+        if (!msgs || msgs.length === 0) {
+            win.innerHTML = '<p class="empty-hint" style="text-align:center;">Group study chat is empty. Start the conversation!</p>';
+            return;
+        }
+        win.innerHTML = '';
+        msgs.forEach(m => {
+            const isMe = m.senderUid === currentUser.uid;
+            const div = document.createElement('div');
+            div.className = `gmsg ${isMe ? 'me' : 'other'}`;
+            let deleteBtn = '';
+            if (currentUser.role === 'teacher' || isMe) {
+                deleteBtn = `<button class="delete-msg-btn" onclick="deleteGroupMsgLocal('${m.id}')">✖</button>`;
+            }
+            div.innerHTML =
+                `${deleteBtn}<div class="who">${escapeHtml(m.senderName)} (${escapeHtml(m.role||'student')})</div><div>${escapeHtml(m.text)}</div>`;
+            win.appendChild(div);
+        });
+        win.scrollTop = win.scrollHeight;
+    }
+
+    function sendGroupMsg() {
+        if (currentUser.isBlocked) { alert('You are currently blocked from messaging.'); return; }
+        const input = document.getElementById('group-input');
+        const text = input.value.trim();
+        if (!text) return;
+        pushToArray('groupChat', {
+            id: genId(),
+            senderUid: currentUser.uid,
+            senderName: currentUser.name,
+            role: currentUser.role,
+            text,
+            time: Date.now()
+        });
+        input.value = '';
+        renderGroupChat();
+    }
+
+    function deleteGroupMsgLocal(msgId) {
+        let msgs = getArray('groupChat');
+        msgs = msgs.filter(m => m.id !== msgId);
+        setArray('groupChat', msgs);
+        renderGroupChat();
+    }
+
+    /* ============================================================
+       HOMEWORK - IMPROVED VERSION
+       ============================================================ */
+    function initHomework() {
+        // Teacher: Post Homework
+        const postBtn = document.getElementById('hw-post-btn');
+        if (postBtn) {
+            postBtn.onclick = () => {
+                const title = document.getElementById('hw-title-input').value.trim();
+                const dueDate = document.getElementById('hw-date-input').value;
+                const details = document.getElementById('hw-details-input').value.trim();
+                if (!title || !dueDate) { alert('Please provide a title and due date.'); return; }
+                pushToArray('homework', {
+                    id: genId(),
+                    title,
+                    dueDate,
+                    details,
+                    postedBy: currentUser.name,
+                    time: Date.now()
+                });
+                document.getElementById('hw-title-input').value = '';
+                document.getElementById('hw-date-input').value = '';
+                document.getElementById('hw-details-input').value = '';
+                triggerCelebrationBanner('📌 Homework posted successfully!');
+                renderHomework();
+                renderStudentHomeworkSelect();
+            };
+        }
+
+        // Student: Submit Homework
+        const submitBtn = document.getElementById('student-hw-submit-btn');
+        if (submitBtn) {
+            submitBtn.onclick = () => {
+                const hwId = document.getElementById('student-hw-select').value;
+                const fileInput = document.getElementById('student-hw-file');
+                const file = fileInput.files[0];
+                const status = document.getElementById('student-hw-submit-status');
+                
+                if (!hwId) { alert('Please select assigned homework.'); return; }
+                
+                // Check if already submitted
+                const submissions = getArray('homeworkSubmissions');
+                const existing = submissions.find(s => s.studentUid === currentUser.uid && s.hwId === hwId);
+                if (existing) {
+                    status.style.color = 'var(--accent-red)';
+                    status.textContent = '⚠️ You already submitted this homework!';
+                    return;
+                }
+                
+                status.textContent = 'Submitting homework...';
+                
+                // Store file as base64 for demo purposes
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const fileData = e.target.result;
+                    pushToArray('homeworkSubmissions', {
+                        id: genId(),
+                        hwId: hwId,
+                        studentUid: currentUser.uid,
+                        studentName: currentUser.name,
+                        fileName: file ? file.name : 'Text Submission',
+                        fileData: fileData || null,
+                        fileType: file ? file.type : 'text/plain',
+                        status: 'submitted',
+                        time: Date.now(),
+                        aiRemark: null
+                    });
+                    status.style.color = 'var(--accent-green)';
+                    status.textContent = '✅ Homework submitted successfully!';
+                    triggerCelebrationBanner('🎉 Homework submitted successfully!');
+                    document.getElementById('student-hw-file-name').textContent = 'Click to attach homework file (PDF, Image, Doc)';
+                    fileInput.value = '';
+                    renderHomework();
+                    renderStudentHomeworkSelect();
+                    renderMySubmissions();
+                };
+                
+                if (file) {
+                    reader.readAsDataURL(file);
+                } else {
+                    // Text-only submission
+                    pushToArray('homeworkSubmissions', {
+                        id: genId(),
+                        hwId: hwId,
+                        studentUid: currentUser.uid,
+                        studentName: currentUser.name,
+                        fileName: 'Text Submission',
+                        fileData: null,
+                        fileType: 'text/plain',
+                        status: 'submitted',
+                        time: Date.now(),
+                        aiRemark: null
+                    });
+                    status.style.color = 'var(--accent-green)';
+                    status.textContent = '✅ Homework submitted successfully!';
+                    triggerCelebrationBanner('🎉 Homework submitted successfully!');
+                    renderHomework();
+                    renderStudentHomeworkSelect();
+                    renderMySubmissions();
+                }
+            };
+        }
+
+        // File input change handler
+        const fileInput = document.getElementById('student-hw-file');
+        if (fileInput) {
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById('student-hw-file-name').textContent = '📄 Selected: ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+                }
+            };
+        }
+
+        renderHomework();
+        renderStudentHomeworkSelect();
+        renderMySubmissions();
+
+        if (currentUser.role === 'teacher') {
+            initTeacherSubmissionsList();
+        }
+    }
+
+    function renderStudentHomeworkSelect() {
+        const select = document.getElementById('student-hw-select');
+        if (!select) return;
+        const allHw = getArray('homework');
+        const submissions = getArray('homeworkSubmissions');
+        const submittedIds = submissions.filter(s => s.studentUid === currentUser.uid).map(s => s.hwId);
+        
+        select.innerHTML = '<option value="">Select assigned homework</option>';
+        allHw.forEach(h => {
+            if (!submittedIds.includes(h.id)) {
+                const opt = document.createElement('option');
+                opt.value = h.id;
+                opt.textContent = h.title + ' (Due: ' + h.dueDate + ')';
+                select.appendChild(opt);
+            }
+        });
+    }
+
+    function renderMySubmissions() {
+        const list = document.getElementById('student-my-submissions-list');
+        if (!list) return;
+        const submissions = getArray('homeworkSubmissions');
+        const mySubs = submissions.filter(s => s.studentUid === currentUser.uid);
+        
+        if (!mySubs || mySubs.length === 0) {
+            list.innerHTML = '<p class="empty-hint">You haven\'t submitted any homework yet.</p>';
+            return;
+        }
+        
+        list.innerHTML = '';
+        mySubs.reverse().forEach(sub => {
+            const hw = getArray('homework').find(h => h.id === sub.hwId);
+            const row = document.createElement('div');
+            row.className = 'list-item';
+            row.style.flexDirection = 'column';
+            row.style.alignItems = 'flex-start';
+            
+            let fileDisplay = sub.fileName;
+            if (sub.fileData) {
+                const fileExt = sub.fileName.split('.').pop().toLowerCase();
+                if (['jpg','jpeg','png','gif','webp'].includes(fileExt)) {
+                    fileDisplay = `<a href="${sub.fileData}" target="_blank" class="submission-file-link">🖼️ View Image</a>`;
+                } else if (fileExt === 'pdf') {
+                    fileDisplay = `<a href="${sub.fileData}" target="_blank" class="submission-file-link">📄 View PDF</a>`;
+                } else {
+                    fileDisplay = `<span>📎 ${escapeHtml(sub.fileName)}</span>`;
+                }
+            }
+            
+            row.innerHTML = `
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <strong>${escapeHtml(hw ? hw.title : 'Unknown Homework')}</strong>
+                    <span class="status-pill ${sub.status === 'checked' ? 'status-checked' : 'status-submitted'}">${sub.status}</span>
+                </div>
+                <div style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">
+                    Submitted: ${new Date(sub.time).toLocaleDateString()} at ${new Date(sub.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                </div>
+                <div style="font-size:12.5px; margin-top:4px;">
+                    File: ${fileDisplay}
+                </div>
+                ${sub.aiRemark ? `<div class="remark-box" style="margin-top:8px;">📝 Teacher's Remark: ${escapeHtml(sub.aiRemark)}</div>` : 
+                  (sub.status === 'checked' ? '<div class="remark-box" style="margin-top:8px;">✅ Teacher has reviewed your submission.</div>' : 
+                   '<div style="font-size:12px; color:var(--text-muted); margin-top:4px;">⏳ Waiting for teacher review...</div>')}
+            `;
+            list.appendChild(row);
+        });
+    }
+
+    function renderHomework() {
+        const hwList = document.getElementById('homework-list');
+        const allHw = getArray('homework');
+
+        if (!allHw || allHw.length === 0) {
+            hwList.innerHTML = '<p class="empty-hint">No homework posted yet.</p>';
+            return;
+        }
+
+        hwList.innerHTML = '';
+        allHw.reverse().forEach(h => {
+            const row = document.createElement('div');
+            row.className = 'list-item';
+            row.style.flexDirection = 'column';
+            row.style.alignItems = 'flex-start';
+            row.innerHTML = `
+              <div style="display:flex; justify-content:space-between; width:100%;">
+                <strong>${escapeHtml(h.title)}</strong>
+                <span class="badge red">Due ${escapeHtml(h.dueDate)}</span>
+              </div>
+              ${h.details ? `<div style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">${escapeHtml(h.details)}</div>` : ''}
+              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Posted by: ${escapeHtml(h.postedBy)}</div>
+              ${currentUser.role === 'teacher' ? `
+                <div style="margin-top:8px;">
+                  <button class="btn small danger" onclick="deleteHomeworkLocal('${h.id}')">🗑️ Delete Homework</button>
+                </div>
+              ` : ''}
+            `;
+            hwList.appendChild(row);
+        });
+
+        // Parent dashboard homework
+        const pdList = document.getElementById('pd-homework-list');
+        if (pdList) {
+            pdList.innerHTML = '';
+            allHw.slice(0, 5).forEach(h => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML =
+                    `<span>${escapeHtml(h.title)}</span><span class="badge red">Due ${escapeHtml(h.dueDate)}</span>`;
+                pdList.appendChild(row);
+            });
+            if (allHw.length === 0) pdList.innerHTML = '<p class="empty-hint">No homework posted yet.</p>';
+        }
+
+        // Dashboard homework
+        const dashHw = document.getElementById('dash-homework');
+        if (dashHw) {
+            dashHw.innerHTML = '';
+            allHw.slice(0, 5).forEach(h => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML =
+                    `<span>${escapeHtml(h.title)}</span><span class="badge red">Due ${escapeHtml(h.dueDate)}</span>`;
+                dashHw.appendChild(row);
+            });
+            if (allHw.length === 0) dashHw.innerHTML = '<p class="empty-hint">No homework posted yet.</p>';
+        }
+    }
+
+    function deleteHomeworkLocal(hwId) {
+        if (!confirm('Delete this homework?')) return;
+        let hw = getArray('homework');
+        hw = hw.filter(h => h.id !== hwId);
+        setArray('homework', hw);
+        renderHomework();
+        renderStudentHomeworkSelect();
+        triggerCelebrationBanner('🗑️ Homework deleted.');
+    }
+
+    function initTeacherSubmissionsList() {
+        const list = document.getElementById('teacher-submissions-list');
+
+        function renderSubmissions() {
+            const subs = getArray('homeworkSubmissions');
+            if (!subs || subs.length === 0) {
+                list.innerHTML = '<p class="empty-hint">No student submissions to review right now.</p>';
+                return;
+            }
+            list.innerHTML = '';
+            subs.reverse().forEach(sub => {
+                const hw = getArray('homework').find(h => h.id === sub.hwId);
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.style.flexDirection = 'column';
+                row.style.alignItems = 'flex-start';
+                
+                let fileDisplay = sub.fileName;
+                if (sub.fileData) {
+                    const fileExt = sub.fileName.split('.').pop().toLowerCase();
+                    if (['jpg','jpeg','png','gif','webp'].includes(fileExt)) {
+                        fileDisplay = `<a href="${sub.fileData}" target="_blank" class="submission-file-link">🖼️ View Image</a>`;
+                    } else if (fileExt === 'pdf') {
+                        fileDisplay = `<a href="${sub.fileData}" target="_blank" class="submission-file-link">📄 View PDF</a>`;
+                    } else {
+                        fileDisplay = `<span>📎 ${escapeHtml(sub.fileName)}</span>`;
+                    }
+                }
+                
+                row.innerHTML = `
+                  <div style="display:flex; justify-content:space-between; width:100%;">
+                    <strong>${escapeHtml(sub.studentName)}</strong>
+                    <span class="status-pill ${sub.status === 'checked' ? 'status-checked' : 'status-submitted'}">${sub.status}</span>
+                  </div>
+                  <div style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">
+                    Homework: ${escapeHtml(hw ? hw.title : 'Unknown')} | Submitted: ${new Date(sub.time).toLocaleDateString()}
+                  </div>
+                  <div style="font-size:12.5px; margin-top:4px;">
+                    File: ${fileDisplay}
+                  </div>
+                  ${sub.aiRemark ? `<div class="remark-box">${escapeHtml(sub.aiRemark)}</div>` : ''}
+                  <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn small" onclick="runAiHomeworkCheckerLocal('${sub.id}')">🤖 AI Check</button>
+                    <button class="btn small secondary" onclick="addTeacherRemarkLocal('${sub.id}')">✏️ Add Remark</button>
+                  </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+        renderSubmissions();
+    }
+
+    async function runAiHomeworkCheckerLocal(subId) {
+        const subs = getArray('homeworkSubmissions');
+        const idx = subs.findIndex(s => s.id === subId);
+        if (idx === -1) { alert('Submission not found.'); return; }
+        
+        const sub = subs[idx];
+        const prompt = `Act as an AI Teacher. Generate encouraging feedback (2-3 sentences) for a student's homework submission titled "${sub.fileName}". Include praise and one constructive tip.`;
+        
+        try {
+            const remark = await callGroqAI(prompt);
+            subs[idx].status = 'checked';
+            subs[idx].aiRemark = remark;
+            setArray('homeworkSubmissions', subs);
+            triggerCelebrationBanner('🤖 AI evaluation complete!');
+            initTeacherSubmissionsList();
+            renderMySubmissions();
+        } catch (err) {
+            alert('Failed to evaluate: ' + err.message);
+        }
+    }
+
+    function addTeacherRemarkLocal(subId) {
+        const remark = prompt('Enter your remark for this submission:');
+        if (!remark) return;
+        
+        const subs = getArray('homeworkSubmissions');
+        const idx = subs.findIndex(s => s.id === subId);
+        if (idx === -1) return;
+        
+        subs[idx].status = 'checked';
+        subs[idx].aiRemark = remark;
+        setArray('homeworkSubmissions', subs);
+        triggerCelebrationBanner('✏️ Remark added successfully!');
+        initTeacherSubmissionsList();
+        renderMySubmissions();
+    }
+
+    /* ============================================================
+       ATTENDANCE
+       ============================================================ */
+    function initAttendance() {
+        if (currentUser.role === 'teacher') {
+            const list = document.getElementById('att-mark-list');
+            const users = getAllUsers();
+            list.innerHTML = '';
+            Object.entries(users).forEach(([uid, u]) => {
+                if (u.role !== 'student') return;
+                const div = document.createElement('div');
+                div.className = 'goal-item';
+                div.innerHTML =
+                    `<input type="checkbox" id="att-chk-${uid}"> <span>${escapeHtml(u.name)} (${escapeHtml(u.grade||'N/A')})</span>`;
+                list.appendChild(div);
+            });
+
+            document.getElementById('att-save-btn').onclick = () => {
+                const date = document.getElementById('att-date-input').value;
+                if (!date) { alert('Select a date'); return; }
+                const users = getAllUsers();
+                const att = getMap('attendance');
+                Object.keys(users).forEach(uid => {
+                    if (users[uid].role !== 'student') return;
+                    const chk = document.getElementById('att-chk-' + uid);
+                    const present = chk ? chk.checked : false;
+                    if (!att[uid]) att[uid] = {};
+                    att[uid][date] = { present, date };
+                });
+                setMap('attendance', att);
+                document.getElementById('att-status').textContent = '✅ Attendance recorded for ' + date;
+                triggerCelebrationBanner('🗓️ Attendance saved successfully!');
+                loadAttendanceHistory(currentUser.uid);
+            };
+        }
+        loadAttendanceHistory(currentUser.uid);
+    }
+
+    function loadAttendanceHistory(uid) {
+        const att = getMap('attendance');
+        const userAtt = att[uid] || {};
+        const records = Object.values(userAtt);
+        const total = records.length;
+        const presentCount = records.filter(r => r.present).length;
+        const pct = total ? Math.round((presentCount / total) * 100) + '%' : '0%';
+        document.getElementById('att-percent').textContent = pct;
+        document.getElementById('att-days').textContent = total;
+        const history = document.getElementById('att-history');
+        if (!history) return;
+        if (total === 0) {
+            history.innerHTML = '<p class="empty-hint">No attendance recorded yet.</p>';
+            return;
+        }
+        history.innerHTML = '';
+        records.reverse().forEach(r => {
+            const row = document.createElement('div');
+            row.className = 'list-item';
+            row.innerHTML =
+                `<span>${escapeHtml(r.date)}</span><span class="badge ${r.present?'green':'red'}">${r.present?'Present':'Absent'}</span>`;
+            history.appendChild(row);
+        });
+    }
+
+    /* ============================================================
+       QUESTION PAPERS
+       ============================================================ */
+    function initPapers() {
+        const genBtn = document.getElementById('paper-generate-btn');
+        if (genBtn) {
+            genBtn.onclick = async () => {
+                const topic = document.getElementById('paper-topic-input').value.trim();
+                const marks = document.getElementById('paper-marks-input').value.trim() || '25';
+                if (!topic) { alert('Enter topic'); return; }
+                const prompt =
+                    `Generate a printable question paper for topic "${topic}" worth ${marks} marks. Include multiple choice, short answer, and long answer sections. Format cleanly for printing with clean bullet structure.`;
+                try {
+                    const content = await callGroqAI(prompt);
+                    pushToArray('questionPapers', {
+                        id: genId(),
+                        topic,
+                        marks,
+                        content,
+                        createdBy: currentUser.name,
+                        time: Date.now()
+                    });
+                    document.getElementById('paper-topic-input').value = '';
+                    triggerCelebrationBanner('🧾 Printable Question Paper created!');
+                    renderPapers();
+                } catch (err) {
+                    alert('Could not generate paper: ' + err.message);
+                }
+            };
+        }
+        renderPapers();
+    }
+
+    function renderPapers() {
+        const list = document.getElementById('papers-list');
+        const data = getArray('questionPapers');
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p class="empty-hint">No question papers yet.</p>';
+            return;
+        }
+        list.innerHTML = '';
+        data.reverse().forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'list-item';
+            row.style.flexDirection = 'column';
+            row.style.alignItems = 'flex-start';
+            row.innerHTML = `
+            <div style="display:flex; justify-content:space-between; width:100%;">
+              <strong>${escapeHtml(p.topic)} (${escapeHtml(p.marks)} Marks)</strong>
+              <span class="badge green">By ${escapeHtml(p.createdBy)}</span>
+            </div>
+            <div class="remark-box" style="white-space:pre-wrap; font-size:13px; width:100%; margin-top:8px;">${escapeHtml(p.content)}</div>
+          `;
+            list.appendChild(row);
+        });
+    }
+
+    /* ============================================================
+       DOUBT HISTORY
+       ============================================================ */
+    function initDoubtHistory() {
+        const list = document.getElementById('doubts-list');
+
+        function render() {
+            const s = readStore();
+            const data = (s.doubts && s.doubts[currentUser.uid]) || [];
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="empty-hint">No doubts asked yet — go ask something!</p>';
+                return;
+            }
+            list.innerHTML = '';
+            data.reverse().forEach(d => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.style.flexDirection = 'column';
+                row.style.alignItems = 'flex-start';
+                row.innerHTML = `
+              <div style="font-weight:700;">Q: ${escapeHtml(d.question)}</div>
+              <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">A: ${escapeHtml(d.answer)}</div>
+            `;
+                list.appendChild(row);
+            });
+        }
+        render();
+    }
+
+    /* ============================================================
+       GOALS
+       ============================================================ */
+    function initGoals() {
+        const addBtn = document.getElementById('goal-add-btn');
+        const input = document.getElementById('goal-input');
+        addBtn.onclick = () => {
+            const text = input.value.trim();
+            if (!text) return;
+            const s = readStore();
+            if (!s.goals) s.goals = {};
+            if (!s.goals[currentUser.uid]) s.goals[currentUser.uid] = [];
+            s.goals[currentUser.uid].push({ id: genId(), text, done: false, time: Date.now() });
+            writeStore(s);
+            input.value = '';
+            renderGoals();
+        };
+        renderGoals();
+    }
+
+    function renderGoals() {
+        const list = document.getElementById('goals-list');
+        const s = readStore();
+        const data = (s.goals && s.goals[currentUser.uid]) || [];
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p class="empty-hint">No goals yet — add one above.</p>';
+            return;
+        }
+        list.innerHTML = '';
+        data.reverse().forEach(g => {
+            const div = document.createElement('div');
+            div.className = 'goal-item' + (g.done ? ' done' : '');
+            div.innerHTML =
+                `<input type="checkbox" ${g.done?'checked':''} onchange="toggleGoalLocal('${g.id}', ${!g.done})"> <span>${escapeHtml(g.text)}</span>`;
+            list.appendChild(div);
+        });
+    }
+
+    function toggleGoalLocal(id, state) {
+        const s = readStore();
+        const goals = s.goals && s.goals[currentUser.uid];
+        if (goals) {
+            const g = goals.find(g => g.id === id);
+            if (g) {
+                g.done = state;
+                writeStore(s);
+                if (state) {
+                    triggerCelebrationBanner('🎯 Goal completed! +10 XP earned!');
+                    if (!s.users) s.users = {};
+                    if (!s.users[currentUser.uid]) s.users[currentUser.uid] = {};
+                    s.users[currentUser.uid].points = (s.users[currentUser.uid].points || 0) + 10;
+                    writeStore(s);
+                    currentUser.points = s.users[currentUser.uid].points;
+                }
+                renderGoals();
+            }
+        }
+    }
+
+    /* ============================================================
+       PROGRESS
+       ============================================================ */
+    async function computeProgress(uid) {
+        const s = readStore();
+        const qs = (s.quizScores && s.quizScores[uid]) || [];
+        let sum = 0,
+            count = 0;
+        qs.forEach(q => { sum += q.score || 0;
+            count++; });
+        const avg = count ? Math.round(sum / count) + '%' : 'N/A';
+        const att = (s.attendance && s.attendance[uid]) || {};
+        const records = Object.values(att);
+        const total = records.length;
+        const present = records.filter(r => r.present).length;
+        const attPct = total ? Math.round((present / total) * 100) + '%' : 'N/A';
+        const goals = (s.goals && s.goals[uid]) || [];
+        const goalsDone = goals.filter(g => g.done).length;
+        const user = (s.users && s.users[uid]) || {};
+        const points = user.points || 0;
+        return { avg, attPct, goalsDone, points };
+    }
+
+    function initProgress() {
+        if (currentUser.role === 'teacher') {
+            const select = document.getElementById('progress-student-select');
+            const users = getAllUsers();
+            select.innerHTML = '<option value="">Select student...</option>';
+            Object.entries(users).forEach(([uid, u]) => {
+                if (u.role !== 'student') return;
+                const opt = document.createElement('option');
+                opt.value = uid;
+                opt.textContent = `${u.name} (${u.grade||'N/A'})`;
+                select.appendChild(opt);
+            });
+            select.onchange = async (e) => {
+                const uid = e.target.value;
+                if (!uid) return;
+                const r = await computeProgress(uid);
+                document.getElementById('pr-quiz-avg').textContent = r.avg;
+                document.getElementById('pr-attendance').textContent = r.attPct;
+                document.getElementById('pr-goals').textContent = r.goalsDone;
+                document.getElementById('pr-points').textContent = r.points;
+            };
+        } else {
+            computeProgress(currentUser.uid).then(r => {
+                document.getElementById('pr-quiz-avg').textContent = r.avg;
+                document.getElementById('pr-attendance').textContent = r.attPct;
+                document.getElementById('pr-goals').textContent = r.goalsDone;
+                document.getElementById('pr-points').textContent = r.points;
+            });
+        }
+    }
+
+    /* ============================================================
+       LEADERBOARD
+       ============================================================ */
+    function initLeaderboard() {
+        const list = document.getElementById('leaderboard-list');
+
+        function render() {
+            const users = getAllUsers();
+            const sorted = Object.entries(users).sort((a, b) => (b[1].points || 0) - (a[1].points || 0));
+            if (!sorted || sorted.length === 0) {
+                list.innerHTML = '<p class="empty-hint">No scores yet.</p>';
+                return;
+            }
+            list.innerHTML = '';
+            sorted.slice(0, 10).forEach(([uid, u], idx) => {
+                const row = document.createElement('div');
+                row.className = 'lb-row' + (idx === 0 ? ' top1' : '');
+                row.innerHTML = `
+              <div class="lb-rank">${idx+1}</div>
+              <div>
+                <strong>${escapeHtml(u.name)}</strong>
+                <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(u.role)} ${u.grade ? '· '+escapeHtml(u.grade) : ''}</div>
+              </div>
+              <div class="lb-points">${u.points || 0} XP 🔥</div>
+            `;
+                list.appendChild(row);
+            });
+        }
+        render();
+    }
+
+    /* ============================================================
+       PARENT DASHBOARD
+       ============================================================ */
+    async function initParentDashboard() {
+        if (!parentChildUid) {
+            document.getElementById('parent-child-label').textContent =
+                'No child account linked. Please enter your child\'s registered email in settings.';
+            return;
+        }
+        const child = getUser(parentChildUid);
+        if (child) {
+            document.getElementById('parent-child-label').textContent =
+                `Showing performance for ${child.name} (${child.grade || 'N/A'})`;
+            const r = await computeProgress(parentChildUid);
+            document.getElementById('pd-quiz-avg').textContent = r.avg;
+            document.getElementById('pd-attendance').textContent = r.attPct;
+        }
+    }
+
+    /* ============================================================
+       CLASS MATERIALS
+       ============================================================ */
+    function initMaterials() {
+        const uploadBtn = document.getElementById('material-upload-btn');
+        if (uploadBtn) {
+            uploadBtn.onclick = () => {
+                const name = document.getElementById('material-name-input').value.trim();
+                const link = document.getElementById('material-link-input').value.trim();
+                if (!name || !link) { alert('Please fill in title and Drive link'); return; }
+                pushToArray('materials', {
+                    id: genId(),
+                    name,
+                    link,
+                    sharedBy: currentUser.name,
+                    time: Date.now()
+                });
+                document.getElementById('material-name-input').value = '';
+                document.getElementById('material-link-input').value = '';
+                triggerCelebrationBanner('📚 Study material shared!');
+                renderMaterials();
+            };
+        }
+        renderMaterials();
+    }
+
+    function renderMaterials() {
+        const list = document.getElementById('materials-list');
+        const data = getArray('materials');
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p class="empty-hint">No materials shared yet.</p>';
+            return;
+        }
+        list.innerHTML = '';
+        data.reverse().forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'list-item';
+            row.innerHTML =
+                `<span>📖 ${escapeHtml(m.name)}</span><a href="${escapeHtml(m.link)}" target="_blank">Open Drive ↗</a>`;
+            list.appendChild(row);
+        });
+    }
+
+    /* ============================================================
+       TEACHERS INFO
+       ============================================================ */
+    function initTeachersInfo() {
+        const list = document.getElementById('teachers-info-list');
+
+        function render() {
+            const users = getAllUsers();
+            list.innerHTML = '';
+            let found = false;
+            Object.entries(users).forEach(([uid, u]) => {
+                if (u.role === 'teacher') {
+                    found = true;
+                    const row = document.createElement('div');
+                    row.className = 'list-item';
+                    row.innerHTML = `
+                <div>
+                  <strong>👩‍🏫 ${escapeHtml(u.name)}</strong>
+                  <div style="font-size:12px; color:var(--text-muted);">${escapeHtml(u.email)}</div>
+                </div>
+                <span class="badge green">Faculty</span>
+              `;
+                    list.appendChild(row);
+                }
+            });
+            if (!found) list.innerHTML = '<p class="empty-hint">No teacher directory profiles registered yet.</p>';
+        }
+        render();
+    }
+
+    /* ============================================================
+       NOTIFICATIONS
+       ============================================================ */
+    function initNotifications() {
+        const bell = document.getElementById('bell-btn');
+        const panel = document.getElementById('notif-panel');
+        const overlay = document.getElementById('notif-overlay');
+        const dot = document.getElementById('bell-dot');
+        const list = document.getElementById('notif-list');
+
+        bell.onclick = () => {
+            panel.classList.toggle('open');
+            overlay.classList.toggle('open');
+            dot.style.display = 'none';
+        };
+        overlay.onclick = () => {
+            panel.classList.remove('open');
+            overlay.classList.remove('open');
+        };
+
+        function renderNotifications() {
+            const data = getNotifications(currentUser.uid);
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="empty-hint">Nothing new right now.</p>';
+                dot.style.display = 'none';
+                return;
+            }
+            list.innerHTML = '';
+            dot.style.display = 'block';
+            data.reverse().forEach(n => {
+                const div = document.createElement('div');
+                div.className = 'notif-item';
+                div.innerHTML =
+                    `<div>${escapeHtml(n.text)}</div><div class="t">${new Date(n.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`;
+                list.appendChild(div);
+            });
+        }
+        renderNotifications();
+        setInterval(renderNotifications, 5000);
+    }
+
+    /* ============================================================
+       DASHBOARD
+       ============================================================ */
+    async function initDashboard() {
+        if (currentUser.role === 'parent') return;
+
+        document.getElementById('dash-photo').src = currentUser.photo || '';
+        document.getElementById('dash-name').textContent = 'Hi, ' + currentUser.name + '!';
+        document.getElementById('dash-sub').textContent = currentUser.role === 'teacher' ? 'Teacher dashboard' :
+            `Your AI Personal Tutor (${currentUser.grade || 'Student'}) is active`;
+
+        const statsEl = document.getElementById('dash-stats');
+
+        if (currentUser.role === 'student') {
+            const r = await computeProgress(currentUser.uid);
+            statsEl.innerHTML = `
+            <div class="stat-box"><span class="num">${r.avg}</span><span class="lbl">Avg Quiz Score</span></div>
+            <div class="stat-box"><span class="num">${r.attPct}</span><span class="lbl">Attendance</span></div>
+            <div class="stat-box"><span class="num">${r.goalsDone}</span><span class="lbl">Goals Done</span></div>
+            <div class="stat-box"><span class="num">${r.points}</span><span class="lbl">XP Points 🔥</span></div>`;
+
+            checkEarlyAlertLocal(r);
+
+            const s = readStore();
+            const doubts = (s.doubts && s.doubts[currentUser.uid]) || [];
+            const el = document.getElementById('dash-doubts');
+            if (!doubts || doubts.length === 0) {
+                el.innerHTML = '<p class="empty-hint">No doubts asked yet.</p>';
+            } else {
+                el.innerHTML = '';
+                doubts.slice(-3).reverse().forEach(d => {
+                    const row = document.createElement('div');
+                    row.className = 'list-item';
+                    row.innerHTML = `<span>${escapeHtml(d.question)}</span>`;
+                    el.appendChild(row);
+                });
+            }
+        }
+
+        if (currentUser.role === 'teacher') {
+            const users = getAllUsers();
+            let studentCount = Object.values(users).filter(u => u.role === 'student').length;
+            const hw = getArray('homework');
+            statsEl.innerHTML = `
+            <div class="stat-box"><span class="num">${studentCount}</span><span class="lbl">Students</span></div>
+            <div class="stat-box"><span class="num">${hw.length}</span><span class="lbl">Homework Posted</span></div>`;
+            document.getElementById('dash-doubts').closest('.card').style.display = 'none';
+        }
+    }
+
+    function checkEarlyAlertLocal(r) {
+        const box = document.getElementById('alert-card-box');
+        const textEl = document.getElementById('alert-msg-text');
+        let alerts = [];
+        let attVal = parseInt(r.attPct);
+        let avgVal = parseInt(r.avg);
+        if (!isNaN(attVal) && attVal < 75) {
+            alerts.push(`⚠️ Declining attendance detected (${r.attPct}). Please attend classes regularly.`);
+        }
+        if (!isNaN(avgVal) && avgVal < 50) {
+            alerts.push(`⚠️ Quiz performance is dipping (${r.avg}). Check out your AI Error Tracker & Study Roadmap for remediation.`);
+        }
+        if (alerts.length > 0) {
+            box.style.display = 'block';
+            textEl.innerHTML = alerts.join('<br>');
+            addNotification(currentUser.uid, '🚨 Early Learning Alert: Performance or attendance needs attention.');
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    /* ============================================================
+       QUIZ GENERATOR
+       ============================================================ */
+    document.getElementById('quiz-generate-btn').onclick = async () => {
+        const topic = document.getElementById('quiz-topic-input').value.trim();
+        const lang = document.getElementById('quiz-lang-select').value;
+        const area = document.getElementById('quiz-area');
+        if (!topic) { alert('Enter a topic'); return; }
+        area.innerHTML = '<p class="empty-hint">Generating quiz with AI...</p>';
+        const prompt =
+            `Create a 4-question multiple-choice quiz on "${topic}" for a ${currentUser.grade || 'general'} student. Language support: ${lang}. Reply with ONLY valid JSON matching this exact shape:
+{"questions":[{"q":"question text","options":["a","b","c","d"],"answer":0}]}`;
+        try {
+            const rawResp = await callGroqAI(prompt);
+            let raw = rawResp.replace(/```json|```/g, '').trim();
+            const firstBrace = raw.indexOf('{');
+            const lastBrace = raw.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1) raw = raw.substring(firstBrace, lastBrace + 1);
+            const quiz = JSON.parse(raw);
+            renderQuiz(quiz.questions, topic);
+            triggerCelebrationBanner('📝 Quiz generated! Test your knowledge.');
+        } catch (err) {
+            area.innerHTML = `<p class="empty-hint">Could not generate quiz: ${err.message}</p>`;
+        }
+    };
+
+    function renderQuiz(questions, topic) {
+        const area = document.getElementById('quiz-area');
+        area.innerHTML = `<h3>📝 Quiz: ${escapeHtml(topic)}</h3>`;
+        const answers = new Array(questions.length).fill(null);
+        questions.forEach((q, qi) => {
+            const block = document.createElement('div');
+            block.className = 'quiz-q';
+            block.innerHTML = `<p>${qi+1}. ${escapeHtml(q.q)}</p>`;
+            q.options.forEach((opt, oi) => {
+                const optEl = document.createElement('div');
+                optEl.className = 'quiz-opt';
+                optEl.textContent = opt;
+                optEl.onclick = () => {
+                    block.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected'));
+                    optEl.classList.add('selected');
+                    answers[qi] = oi;
+                };
+                block.appendChild(optEl);
+            });
+            area.appendChild(block);
+        });
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'btn';
+        submitBtn.style.marginTop = '10px';
+        submitBtn.textContent = 'Submit Quiz';
+        submitBtn.onclick = () => {
+            let score = 0;
+            area.querySelectorAll('.quiz-q').forEach((block, qi) => {
+                const opts = block.querySelectorAll('.quiz-opt');
+                opts[questions[qi].answer].classList.add('correct');
+                if (answers[qi] === questions[qi].answer) score++;
+                else if (answers[qi] !== null && answers[qi] !== questions[qi].answer) {
+                    opts[answers[qi]].classList.add('wrong');
+                    const s = readStore();
+                    if (!s.mistakes) s.mistakes = {};
+                    if (!s.mistakes[currentUser.uid]) s.mistakes[currentUser.uid] = [];
+                    s.mistakes[currentUser.uid].push({
+                        question: questions[qi].q,
+                        topic: topic,
+                        userAnswer: questions[qi].options[answers[qi]],
+                        time: Date.now()
+                    });
+                    writeStore(s);
+                }
+            });
+            submitBtn.disabled = true;
+            const earned = score * 10;
+            const s = readStore();
+            if (!s.users) s.users = {};
+            if (!s.users[currentUser.uid]) s.users[currentUser.uid] = {};
+            s.users[currentUser.uid].points = (s.users[currentUser.uid].points || 0) + earned;
+            if (!s.quizScores) s.quizScores = {};
+            if (!s.quizScores[currentUser.uid]) s.quizScores[currentUser.uid] = [];
+            s.quizScores[currentUser.uid].push({ score: score * 25, topic, time: Date.now() });
+            writeStore(s);
+            currentUser.points = s.users[currentUser.uid].points;
+            triggerCelebrationBanner(`🏆 You scored ${score}/${questions.length}! +${earned} XP!`);
+            initErrorTracker();
+        };
+        area.appendChild(submitBtn);
+    }
+
+    /* ============================================================
+       INIT
+       ------------------------------------------------------------
+       Firebase Auth's onAuthStateChanged (registered above) fires
+       automatically on page load — with the signed-in user if a
+       session already exists, or null otherwise — and shows the
+       right screen. We just set the initial screen so there's no
+       blank page while that resolves.
+       ============================================================ */
+    document.getElementById('about-card').style.display = 'block';
+
+    console.log('📚 Studix loaded — synced live via Firebase.');
+</script>
+</body>
+</html>
